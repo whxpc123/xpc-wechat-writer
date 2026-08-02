@@ -23,17 +23,20 @@ https://github.com/whxpc123/xpc-wechat-writer
 Skill 位于仓库根目录，名称为 xpc-wechat-writer。
 ```
 
-也可以使用 Codex 自带的 Skill Installer：
+也可以直接克隆到 Codex 的全局 Skill 目录：
 
 ```bash
-python3 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
-  --repo whxpc123/xpc-wechat-writer \
-  --path . \
-  --name xpc-wechat-writer \
-  --method git
+git clone https://github.com/whxpc123/xpc-wechat-writer.git \
+  ~/.codex/skills/xpc-wechat-writer
 ```
 
 安装位置默认为 `~/.codex/skills/xpc-wechat-writer`。安装后在下一轮对话中可用。
+
+更新已安装版本：
+
+```bash
+git -C ~/.codex/skills/xpc-wechat-writer pull --ff-only
+```
 
 ## 使用
 
