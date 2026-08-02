@@ -29,7 +29,8 @@ Skill 位于仓库根目录，名称为 xpc-wechat-writer。
 python3 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
   --repo whxpc123/xpc-wechat-writer \
   --path . \
-  --name xpc-wechat-writer
+  --name xpc-wechat-writer \
+  --method git
 ```
 
 安装位置默认为 `~/.codex/skills/xpc-wechat-writer`。安装后在下一轮对话中可用。
