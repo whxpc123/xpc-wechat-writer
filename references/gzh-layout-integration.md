@@ -1,6 +1,6 @@
 # gzh-design 排版集成
 
-本 Skill 使用独立的 `gzh-design` Skill 完成公众号正文排版，不复制其主题源码。上游项目：<https://github.com/isjiamu/gzh-design-skill>。
+本 Skill 使用独立的 `gzh-design` Skill 完成公众号正文排版，不复制其主题源码。上游项目：<https://github.com/isjiamu/gzh-design-skill>。选中的主题同时作为正文图和封面的视觉源，具体映射见 [theme-image-system.md](theme-image-system.md)。
 
 ## 定位依赖
 
@@ -46,7 +46,7 @@ npx -y skills@latest add isjiamu/gzh-design-skill \
 - 用户单独要求给现成文章排版且未指定主题时，先推荐并让用户选择；若同一句明确说「按推荐主题」，不再询问。
 - 排版主题是可选配置，不新增强制确认点。用户可以用「确认大纲，排版用石墨极简风」一次完成大纲确认和主题选择。
 
-最终选择写入文章目录的 `spec.md`，不要跨文章继承上一次的主题。
+最终选择写入文章目录的 `spec.md`，并生成对应的 `imgs/visual-system.md`。不要跨文章继承上一次的主题。
 
 ## 输入与产物
 
@@ -62,4 +62,4 @@ npx -y skills@latest add isjiamu/gzh-design-skill \
 
 主题组件库若要求作者签名或默认作者占位，XPC 文章一律省略该签名。允许保留通用点赞、在看、转发提示，但不得出现作者姓名、联系邮箱或投稿信息。
 
-封面仍使用文章目录中的 `imgs/cover.png`，保持 1800 × 766、2.35:1；正文主题中的视觉封面组件只是正文开场模块，不替代公众号外部封面。
+封面仍使用文章目录中的 `imgs/cover.png`，保持 1800 × 766、2.35:1；正文主题中的视觉封面组件只是正文开场模块，不替代公众号外部封面。外部封面与正文图需要继承同一主题颜色、线条、几何和留白，但不照抄 HTML 组件截图。

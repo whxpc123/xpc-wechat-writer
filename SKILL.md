@@ -25,6 +25,8 @@ description: 为 XPC 按固定流程策划、研究、写作并交付面向中�
 
 确定排版主题和生成公众号 HTML 前阅读 [references/gzh-layout-integration.md](references/gzh-layout-integration.md)。
 
+规划正文图、封面和生成提示词前阅读 [references/theme-image-system.md](references/theme-image-system.md)。选中的 `gzh-design` 主题是 HTML、正文图和封面的共同视觉源。
+
 生成一批选题、切换同批候选或接收用户提供的大纲时，阅读 [references/topic-batch-state.md](references/topic-batch-state.md)，并使用 `scripts/topic_batch.mjs` 维护跨会话状态。
 
 ## 默认位置
@@ -149,7 +151,7 @@ description: 为 XPC 按固定流程策划、研究、写作并交付面向中�
 - 如何扣回主线
 - 读者获得什么动作
 
-同时给出 3 至 5 张正文图和封面的视觉计划，并增加「排版主题」：依据题材推荐 1 个 `gzh-design` 主题，列出全部可选主题及其适用场景。此时不生成图片或 HTML。
+同时给出 3 至 5 张正文图和封面的视觉计划，并增加「排版与图片主题」：依据题材推荐 1 个 `gzh-design` 主题，列出全部可选主题及其适用场景。明确该主题会同时约束 HTML、正文图和封面。此时不生成图片或 HTML。
 
 最后明确请求用户确认大纲，然后停止。不要提前创建最终 HTML。
 
@@ -170,7 +172,7 @@ description: 为 XPC 按固定流程策划、研究、写作并交付面向中�
 
 创建文章目录并保存
 
-- `spec.md`，确认后的主题、读者、目标、结构和视觉
+- `spec.md`，确认后的主题、读者、目标、结构，以及 HTML、正文图和封面共用的视觉系统
 - `research.md`，来源链接、关键数据、案例和口径限制
 
 所有时效性事实在写作当天再次核对。医疗、法律、财务和政策内容需要更高标准的官方来源与风险提示。
@@ -191,33 +193,27 @@ description: 为 XPC 按固定流程策划、研究、写作并交付面向中�
 
 默认生成 5 张正文图，1600 × 900 PNG。
 
-默认视觉
+先读取 [references/theme-image-system.md](references/theme-image-system.md) 和所选 `gzh-design` 主题的设计变量。创建 `imgs/visual-system.md`，记录主题名、主题标识、主色、背景色、强调色、线条、几何、留白、字体气质、纹理和禁用项。该文件是本篇全部图片的单一视觉约束。
 
-- 类型按内容使用 infographic、comparison、flowchart、framework
-- 风格 `sketch-notes`
-- 配色 `macaron`
-- 暖奶油纸张、黑色手绘线、柔和色块
-- 简体中文、短标签、无水印、无品牌 Logo
+使用 `baoyu-article-illustrator` 选择最适合内容的信息表达类型，例如 infographic、comparison、flowchart 或 framework；但渲染风格、配色、卡片形态、线条粗细、阴影、留白和装饰必须继承 `imgs/visual-system.md`，不得再固定为 `sketch-notes + macaron`。简体中文只使用 3 至 8 个短标签，不放长段落，不加水印或未经授权的品牌 Logo。
 
-使用 `baoyu-article-illustrator` 和原生 `imagegen`。每张图必须先保存提示词到 `imgs/prompts/`，再生成。
+正式大纲已经包含视觉计划和排版主题时，用户回复「确认大纲」「按默认配置」或指定主题，即视为同时确认图片视觉系统，不再增加一次图片确认。若用户在图片生成前改变主题，先更新 `spec.md` 和 `imgs/visual-system.md`。
+
+使用 `baoyu-article-illustrator` 和原生 `imagegen`。先把封面和每张正文图提示词保存到 `imgs/prompts/`；每份提示词必须使用视觉系统文件中的统一前缀，并明确画面信息、布局、文字、尺寸和禁用项。生成任何图片前运行：
+
+```bash
+node <skill-dir>/scripts/verify_visual_prompts.mjs <article-dir>
+```
+
+只有提示词全部继承同一主题、颜色和画面约束后才开始生图。按 `baoyu-article-illustrator` 的批次策略生成，不在同一工具调用中塞入多张互不相干的画面。
 
 生成后逐张查看。若文字错误、擅自增加案例细节、出现英文杂字或把抽象品类画成未经证实的具体产品，保存新的修正版提示词并重新生成。不得用 Pillow、Canvas、SVG 或位图覆盖修补文字。
 
 ### 4 生成封面
 
-默认封面
+封面固定为 1800 × 766 PNG、2.35 比 1。使用 `baoyu-cover-image` 选择适合文章的 conceptual、typography、metaphor 或 scene 构图，但颜色、渲染、线条、几何、纹理和字体气质必须继承 `imgs/visual-system.md`。它和正文图应明显属于同一视觉家族，同时通过不同构图避免五张图像同一模板的机械重复。
 
-- 1800 × 766 PNG
-- 比例 2.35 比 1
-- conceptual 类型
-- cool 配色
-- digital 渲染
-- title-only
-- clean 字体
-- balanced 情绪
-- 无水印和 Logo
-
-使用 `baoyu-cover-image` 和原生 `imagegen`。封面标题必须与最终标题逐字一致，标点也要检查。允许只做裁切和缩放，不允许程序覆盖标题。
+封面提示词保存为 `imgs/prompts/00-cover-{slug}.md`，并通过上一步的视觉提示词校验。使用 `baoyu-cover-image` 和原生 `imagegen`。封面标题必须与最终标题逐字一致，标点也要检查；标题以外只保留必要的极短辅助文字。允许只做裁切和缩放，不允许程序覆盖标题。
 
 ### 5 去 AI 味终审
 
@@ -309,3 +305,4 @@ node <skill-dir>/scripts/verify_delivery.mjs <article-dir>
 - 每篇文章必须有独立目录
 - 选题和正式大纲必须等用户确认
 - 排版主题可逐篇选择；只确认大纲而未指定主题时使用本篇推荐项
+- 所选 `gzh-design` 主题同时控制 HTML、正文图和封面，不得回退为固定马卡龙手绘、通用蓝紫渐变或互不相关的三套视觉
