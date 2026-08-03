@@ -12,24 +12,28 @@ const publishPath = join(root, 'publish.html');
 
 const generated = await readFile(generatedPath, 'utf8');
 const markdown = await readFile(markdownPath, 'utf8');
-await writeFile(wechatBodyPath, generated, 'utf8');
-
-const title = decodeEntities(generated.match(/<title>([\s\S]*?)<\/title>/i)?.[1] ?? '公众号文章');
-const summary = markdown.match(/^summary:\s*(.+)$/m)?.[1]?.trim()
+const title = frontmatterValue(markdown, 'title')
+  ?? decodeEntities(generated.match(/<title>([\s\S]*?)<\/title>/i)?.[1] ?? '公众号文章');
+const summary = frontmatterValue(markdown, 'summary')
   ?? decodeEntities(generated.match(/<meta name="description" content="([\s\S]*?)">/i)?.[1] ?? '');
 const outputStart = generated.indexOf('<div id="output">');
 const outputEnd = generated.lastIndexOf('</div>');
+const articleBody = outputStart >= 0 && outputEnd > outputStart
+  ? generated.slice(outputStart + '<div id="output">'.length, outputEnd).trim()
+  : generated.trim();
 
-if (outputStart < 0 || outputEnd < 0 || outputEnd <= outputStart) {
-  throw new Error('Cannot locate #output in generated article HTML');
+if (!/^<section[\s>]/i.test(articleBody) || !/<\/section>\s*$/i.test(articleBody)) {
+  throw new Error('article-formatted.html must contain a root <section> or a legacy #output section');
 }
 
-const articleBody = generated.slice(outputStart + '<div id="output">'.length, outputEnd).trim();
+await writeFile(wechatBodyPath, `${articleBody}\n`, 'utf8');
 const safeTitle = escapeHtml(title);
 const safeSummary = escapeHtml(summary);
 const bodyImagePaths = [...articleBody.matchAll(/<img\b[^>]*\bsrc="([^"]+)"/gi)]
   .map((match) => match[1]);
 const imageCount = bodyImagePaths.length;
+const isGzhDesign = /<span\s+leaf(?:="")?/i.test(articleBody);
+const layoutLabel = isGzhDesign ? 'gzh-design · selected theme · inline CSS' : 'legacy · inline CSS';
 const portableImagePaths = [...new Set(['imgs/cover.png', ...bodyImagePaths])];
 const embeddedImageData = Object.fromEntries(await Promise.all(
   portableImagePaths.map(async (relativePath) => {
@@ -356,7 +360,7 @@ const template = `<!doctype html>
       .preview-toolbar { align-items: flex-start; border-radius: 16px 16px 0 0; }
       .preview-meta { white-space: normal; text-align: right; }
       .wechat-frame { padding: 8px; }
-      #wechat-body > .container { border-radius: 14px !important; padding: 10px !important; }
+      #wechat-body > section { border-radius: 14px !important; padding-left: 10px !important; padding-right: 10px !important; }
       #wechat-body p { font-size: 16px !important; line-height: 1.9 !important; word-break: normal !important; }
       .action-grid { grid-template-columns: 1fr; }
     }
@@ -424,7 +428,7 @@ const template = `<!doctype html>
       <section class="preview-panel" aria-label="公众号正文预览">
         <div class="preview-toolbar">
           <div class="preview-title">公众号正文预览</div>
-          <div class="preview-meta">modern · 15px · inline CSS</div>
+          <div class="preview-meta">${layoutLabel}</div>
         </div>
         <div class="wechat-frame">
           <article id="wechat-body">
@@ -534,7 +538,8 @@ const template = `<!doctype html>
       button.disabled = true;
       setStatus('正在把${imageCount}张图片写入富文本剪贴板，请稍候。');
 
-      const source = document.querySelector('#wechat-body > .container');
+      const source = document.querySelector('#wechat-body > section');
+      if (!source) throw new Error('找不到公众号正文根 section');
       const clone = source.cloneNode(true);
       await hydrateCloneImages(source, clone);
 
@@ -623,4 +628,13 @@ function decodeEntities(value) {
     .replaceAll('&lt;', '<')
     .replaceAll('&gt;', '>')
     .replaceAll('&amp;', '&');
+}
+
+function frontmatterValue(source, key) {
+  const raw = source.match(new RegExp(`^${key}:\\s*(.+)$`, 'm'))?.[1]?.trim();
+  if (!raw) return undefined;
+  if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
+    return raw.slice(1, -1);
+  }
+  return raw;
 }

@@ -9,9 +9,31 @@
 - 核查官方来源、案例、数据和统计口径
 - 借用现象解读型叙事节奏，但不冒充任何作者
 - 默认生成 5 张正文图和 2.35:1 公众号封面
+- 使用 gzh-design 生成可直接粘贴的公众号正文，支持逐篇选择 6 套主题
 - 生成适配手机和电脑的 HTML 复制工作台
 - 分别复制标题、摘要、正文与图片、封面
 - 每篇文章创建独立目录并执行交付验收
+
+## 排版依赖
+
+本 Skill 调用独立的 [gzh-design-skill](https://github.com/isjiamu/gzh-design-skill) 完成主题排版。请先把它安装为全局 Skill：
+
+```bash
+npx -y skills@latest add isjiamu/gzh-design-skill \
+  --skill gzh-design \
+  --agent codex \
+  --global \
+  --copy \
+  --yes
+```
+
+正式大纲会给出推荐主题和全部可选主题。可以在确认时直接指定，例如：
+
+```text
+确认大纲，排版用石墨极简风
+```
+
+只回复「确认」或「按默认配置」时，使用本篇推荐主题，不固定为摸鱼绿。
 
 ## 安装
 

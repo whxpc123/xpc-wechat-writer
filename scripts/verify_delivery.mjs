@@ -44,6 +44,24 @@ const cover = dimensions['imgs/cover.png'];
 assert.ok(Math.abs((cover.width / cover.height) - 2.35) < 0.01, '封面不是 2.35 比 1');
 assert.equal([...wechatBodyHtml.matchAll(/<img /g)].length, imageRefs.length, '纯正文图片数不一致');
 assert.equal(wechatBodyHtml.includes('MDTOHTMLIMGPH'), false, '纯正文仍有图片占位符');
+assert.match(wechatBodyHtml.trim(), /^<section[\s>]/i, '纯正文不是根 section');
+assert.match(wechatBodyHtml.trim(), /<\/section>$/i, '纯正文没有以 section 结束');
+assert.ok([...wechatBodyHtml.matchAll(/<span\s+leaf=""/gi)].length > 0, '纯正文缺少 span leaf 包裹');
+
+const gzhForbidden = [
+  /<style[\s>]/i, /<script[\s>]/i, /<\/?div[\s>]/i, /\sclass\s*=/i, /\sid\s*=/i,
+  /position\s*:\s*(?:fixed|absolute|sticky)/i, /float\s*:/i, /@media/i, /@keyframes/i,
+  /display\s*:\s*grid/i, /var\s*\(\s*--/i
+];
+const gzhForbiddenHits = gzhForbidden.filter((pattern) => pattern.test(wechatBodyHtml));
+assert.deepEqual(gzhForbiddenHits, [], '纯正文包含公众号不兼容标签或样式');
+
+for (const imageTag of wechatBodyHtml.match(/<img\b[^>]*>/gi) ?? []) {
+  assert.match(imageTag, /max-width\s*:\s*100%/i, '正文图片缺少 max-width:100%');
+  assert.match(imageTag, /height\s*:\s*auto/i, '正文图片缺少 height:auto');
+  assert.match(imageTag, /display\s*:\s*block/i, '正文图片缺少 display:block');
+  assert.match(imageTag, /margin\s*:\s*0 auto/i, '正文图片缺少 margin:0 auto');
+}
 assert.equal([...articleHtml.matchAll(/<button /g)].length, 4, '复制按钮不是 4 个');
 assert.equal([...articleHtml.matchAll(/<img /g)].length, imageRefs.length + 1, '工作台图片数不一致');
 assert.equal([...publishHtml.matchAll(/<button /g)].length, 4, '备用入口复制按钮不是 4 个');
@@ -66,6 +84,7 @@ console.log(JSON.stringify({
   forbiddenHits,
   contentImages: imageRefs.length,
   embeddedImages: Object.keys(embedded).length,
+  leafSpans: [...wechatBodyHtml.matchAll(/<span\s+leaf=""/gi)].length,
   copyButtons: 4,
   coverRatio: Number((cover.width / cover.height).toFixed(4)),
   dimensions
