@@ -39,14 +39,32 @@
       "files": [],
       "expectations": [
         "每篇文章使用独立日期目录",
-        "交付 research.md、article.md、article.html、wechat-body.html 和 qa-report.md",
+        "交付 research.md、writing-plan.md、fact-lock.md、article-draft.md、article.md、edit-report.md、article.html、wechat-body.html 和 qa-report.md",
         "正文 4000 至 8000 字且不含卡兹克署名或投稿邮箱",
+        "正文先完成结构编辑再做句子去 AI 味，并通过 verify_writing.mjs",
+        "核心判断在正文前 600 字完整出现，事实与作者判断在 fact-lock.md 分开记录",
         "包含 5 张正文图和 2.35 比 1 封面",
         "使用本篇推荐的 gzh-design 主题生成纯 section 正文并通过兼容校验",
         "imgs/visual-system.md 记录推荐主题的颜色、线条、几何、留白和禁用项",
         "封面和正文图提示词通过统一主题校验，不使用固定马卡龙手绘或通用 AI 蓝紫风",
         "article.html 提供标题、摘要、正文含图片和封面的四个复制按钮",
         "file 模式复制与手机电脑响应式验收通过"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "确认大纲，写作重点优化一下，不要像资料汇编，也不要只在最后机械去 AI 味。",
+      "expected_output": "先创建写前编辑卡和事实锁，按文章原型完成初稿；先做结构精修，再做句子去 AI 味，输出编辑报告并通过写作校验后继续图片和 HTML。",
+      "files": [],
+      "expectations": [
+        "writing-plan.md 只有一个核心判断，并记录文章原型、开头锚点、三个读者问题、情绪曲线、回环对象和当天动作",
+        "fact-lock.md 将不可改动事实、来源、适用边界和作者判断分开记录，待核实项已经清零",
+        "根据现象解读、调查实验、方法分享或政策趋势选择一种主原型",
+        "article-draft.md 完成后先删除重复解释、前移关键判断并检查主线，再做句子层面的去 AI 味",
+        "不让 khazix-writer 以卡兹克身份主导全文，不出现固定署名、邮箱、粗口或虚构第一人称",
+        "article.md 的核心判断在前 600 字完整出现",
+        "edit-report.md 记录结构删改、事实核对、读者测试和仍存在的限制",
+        "verify_writing.mjs 通过后才进入图片与排版阶段"
       ]
     },
     {

@@ -1,6 +1,6 @@
 ---
 name: xpc-wechat-writer
-description: 为 XPC 按固定流程策划、研究、写作并交付面向中国普通用户的 AI 公众号长文。只要用户提到继续下一篇、公众号选题、选第几个题、继续同批第二个题、提供某个候选的大纲、确认大纲、写这个选题、去 AI 味、选择公众号排版主题、生成公众号 HTML、复制正文图片、标题摘要或 2.35:1 封面，就应使用本 Skill，即使用户只说「1」「确认」「继续选题 2」。它负责保存每批 5 个候选及其写作状态，允许多个候选逐篇完成；同时执行热点研究和 HKR 选题、两次确认、可选 gzh-design 主题排版、非冒充式卡兹克风格写作、真实案例与口径核查、原创配图、封面、手机电脑自适应复制工作台，并为每篇文章建立独立目录。不要用于小红书短帖、微博短文、纯下载公众号文章或自动发布。
+description: 为 XPC 按固定流程策划、研究、写作并交付面向中国普通用户的 AI 公众号长文。只要用户提到继续下一篇、公众号选题、选第几个题、继续同批第二个题、提供某个候选的大纲、确认大纲、写这个选题、优化写作、去 AI 味、选择公众号排版主题、生成公众号 HTML、复制正文图片、标题摘要或 2.35:1 封面，就应使用本 Skill，即使用户只说「1」「确认」「继续选题 2」。它负责保存每批 5 个候选及其写作状态，允许多个候选逐篇完成；同时执行热点研究和 HKR 选题、两次确认、写前编辑卡、事实锁定、分原型叙事、结构精修与句子去 AI 味、真实案例与口径核查、可选 gzh-design 主题排版、原创配图、封面、手机电脑自适应复制工作台，并为每篇文章建立独立目录。不要用于小红书短帖、微博短文、纯下载公众号文章或自动发布。
 ---
 
 # XPC 公众号文章生产线
@@ -19,7 +19,7 @@ description: 为 XPC 按固定流程策划、研究、写作并交付面向中�
 
 选题、系列排序和用户价值判断需要阅读 [references/editorial-strategy.md](references/editorial-strategy.md)。
 
-正文写作前阅读 [references/writing-style.md](references/writing-style.md)。
+正文写作前完整阅读 [references/writing-style.md](references/writing-style.md) 和 [references/writing-workflow.md](references/writing-workflow.md)。前者约束阅读感与硬规则，后者约束写前编辑卡、文章原型、两轮编辑和事实锁定。
 
 创建目录、图片和 HTML 前阅读 [references/delivery-contract.md](references/delivery-contract.md)。
 
@@ -174,20 +174,31 @@ description: 为 XPC 按固定流程策划、研究、写作并交付面向中�
 
 - `spec.md`，确认后的主题、读者、目标、结构，以及 HTML、正文图和封面共用的视觉系统
 - `research.md`，来源链接、关键数据、案例和口径限制
+- `fact-lock.md`，锁定不可改动的数据、样本、时间、来源、适用边界，以及与事实分开的作者判断
 
 所有时效性事实在写作当天再次核对。医疗、法律、财务和政策内容需要更高标准的官方来源与风险提示。
 
 ### 2 写正文
 
-优先调用以下可用 Skill，并在使用前读取各自说明
+先读取写作参考，按 [references/writing-workflow.md](references/writing-workflow.md) 完成以下过程。
 
-1. `content-research-writer` 或 `huashu-research`，补齐证据
-2. `khazix-writer`，借用叙事节奏和现象解读方法
-3. `humanize-chinese`，做最小必要的去 AI 味修改
+1. 创建 `writing-plan.md`。只写一个核心判断，选择一种文章原型，确定开头锚点、三个读者问题、情绪曲线、回环对象和当天可执行动作。
+2. 把 `research.md` 的证据映射到文章段落，并同步完成 `fact-lock.md`。事实、来源、限制和作者判断必须分栏记录。
+3. 需要补证据时调用 `content-research-writer` 或 `huashu-research`。不要用新素材静默改变已经确认的核心判断；证据与判断冲突时，以证据为准并记录调整。
+4. 按选定原型写 `article-draft.md`。开头 200 字内出现具体事件、人物、物件或数字；核心判断在前 600 字内完整出现。
+5. 先做结构编辑。删除重复解释，移动过晚的判断，检查每一部分是否推进主线，并优先压缩初稿的 10% 至 15%。
+6. 再做句子编辑。需要时调用 `humanize-chinese` 做最小改写，先删空连接词，再改变句子节奏，最后用已核实细节替换抽象总结。
+7. 保存 `article.md` 和 `edit-report.md`。报告记录结构删改、事实锁定复核、仍保留的限制，以及读者能否回答发生了什么、与我有什么关系、今天能做什么。
 
-借用风格不等于冒充作者。不得声称是卡兹克，不得加入他的署名、邮箱或固定投稿尾部，也不得编造第一人称体验。
+不要让 `khazix-writer` 以作者身份主导全文。只可借用具体事件切入、层层追问、逐次揭晓、明确判断、短段落和结尾回环六种叙事技术；忽略其中的身份扮演、固定署名、邮箱、粗口、固定口癖和未经证实的第一人称要求。不得声称是卡兹克，不得编造第一人称体验。
 
-先保存 `article-draft.md`，去 AI 味和事实复核后保存 `article.md`。
+正文完成后运行：
+
+```bash
+node <skill-dir>/scripts/verify_writing.mjs <article-dir>
+```
+
+修复全部 ERROR 后才能规划最终图片文案和进入排版。WARNING 需要人工判断并在 `edit-report.md` 说明保留原因。
 
 ### 3 生成正文图
 
@@ -215,16 +226,16 @@ node <skill-dir>/scripts/verify_visual_prompts.mjs <article-dir>
 
 封面提示词保存为 `imgs/prompts/00-cover-{slug}.md`，并通过上一步的视觉提示词校验。使用 `baoyu-cover-image` 和原生 `imagegen`。封面标题必须与最终标题逐字一致，标点也要检查；标题以外只保留必要的极短辅助文字。允许只做裁切和缩放，不允许程序覆盖标题。
 
-### 5 去 AI 味终审
+### 5 写作终审
 
-对照写作参考执行四层检查
+图片完成后不要重新生成整篇正文。对照 `writing-plan.md`、`fact-lock.md` 和写作参考执行四层回归检查
 
 - 硬规则，禁用词、标点、署名和虚构经验
 - 节奏，短段落、疑问、断裂句和回环
 - 内容，观点有证据，限制写清楚，方法能执行
 - 活人感，像有判断的普通人在认真聊天，不像报告或品牌稿
 
-去 AI 味只做最小必要改写，不能把数据、引用和限定条件改掉。
+终审只做最小必要改写，不能把数据、引用和限定条件改掉。若正文发生变化，重新运行 `verify_writing.mjs`，并同步更新 `edit-report.md`、图片说明和后续排版文件。
 
 ### 6 排版和转换
 
@@ -265,9 +276,10 @@ node <skill-dir>/scripts/build_publish.mjs <article-dir>
 
 ### 8 验收
 
-先运行
+先运行写作验收和交付验收
 
 ```bash
+node <skill-dir>/scripts/verify_writing.mjs <article-dir>
 node <skill-dir>/scripts/verify_delivery.mjs <article-dir>
 ```
 

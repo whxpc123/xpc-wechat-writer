@@ -9,8 +9,11 @@ YYYY-MM-DD-topic-slug/
 ├── README.md
 ├── spec.md
 ├── research.md
+├── writing-plan.md
+├── fact-lock.md
 ├── article-draft.md
 ├── article.md
+├── edit-report.md
 ├── article-formatted.md
 ├── article-formatted.html
 ├── article_排版_{主题中文名}({英文标识}).html
@@ -89,6 +92,11 @@ summary: 50 至 100 字摘要
 
 确定性检查
 
+- `writing-plan.md` 包含文章原型、唯一核心判断、开头锚点、三个读者问题、情绪曲线、回环对象和当天动作
+- `fact-lock.md` 分开记录事实、来源、适用边界和作者判断，待核实项已经清零
+- 核心判断在正文前 600 字完整出现
+- `edit-report.md` 确认事实核对和读者测试通过
+- `scripts/verify_writing.mjs` 通过，WARNING 已经人工判断并写入编辑报告
 - 标题和摘要存在
 - 正文 4000 至 8000 字符
 - 关键数据和限定语存在
