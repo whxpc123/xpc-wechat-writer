@@ -41,7 +41,46 @@ npx -y skills@latest add isjiamu/gzh-design-skill \
 
 ## 安装
 
-可以让 Codex 直接安装：
+推荐使用开源 Agent Skills CLI 从 GitHub 全局安装到 Codex：
+
+```bash
+npx -y skills@latest add whxpc123/xpc-wechat-writer \
+  --skill xpc-wechat-writer \
+  --agent codex \
+  --global \
+  --copy \
+  --yes
+```
+
+建议使用 Node.js 22.20 或更高版本。安装完成后验证：
+
+```bash
+npx -y skills@latest list --global --agent codex
+```
+
+只安装到当前项目，不设为全局 Skill：
+
+```bash
+npx -y skills@latest add whxpc123/xpc-wechat-writer \
+  --skill xpc-wechat-writer \
+  --agent codex \
+  --copy \
+  --yes
+```
+
+查看 GitHub 仓库中可安装的 Skill：
+
+```bash
+npx -y skills@latest add whxpc123/xpc-wechat-writer --list
+```
+
+更新全局安装版本：
+
+```bash
+npx -y skills@latest update xpc-wechat-writer --global --yes
+```
+
+也可以让 Codex 根据 GitHub 地址安装：
 
 ```text
 请从 GitHub 安装 Skill：
@@ -49,7 +88,7 @@ https://github.com/whxpc123/xpc-wechat-writer
 Skill 位于仓库根目录，名称为 xpc-wechat-writer。
 ```
 
-也可以直接克隆到 Codex 的全局 Skill 目录：
+手动安装仍可直接克隆到 Codex 的全局 Skill 目录：
 
 ```bash
 git clone https://github.com/whxpc123/xpc-wechat-writer.git \
@@ -58,7 +97,7 @@ git clone https://github.com/whxpc123/xpc-wechat-writer.git \
 
 安装位置默认为 `~/.codex/skills/xpc-wechat-writer`。安装后在下一轮对话中可用。
 
-更新已安装版本：
+手动克隆版本的更新方式：
 
 ```bash
 git -C ~/.codex/skills/xpc-wechat-writer pull --ff-only
