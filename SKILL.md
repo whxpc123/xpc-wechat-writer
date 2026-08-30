@@ -210,15 +210,19 @@ node <skill-dir>/scripts/verify_writing.mjs <article-dir>
 
 ### 3 生成正文图
 
-默认生成 5 张正文图，1600 × 900 PNG。
+默认生成 5 张正文图；普通正文图为 1600 × 900 PNG，`complex-flowchart` 按信息量使用更高分辨率。
 
 先读取 [references/theme-image-system.md](references/theme-image-system.md) 和所选 `gzh-design` 主题的设计变量。创建 `imgs/visual-system.md`，记录主题名、主题标识、主色、背景色、强调色、线条、几何、留白、字体气质、纹理和禁用项。该文件是本篇全部图片的单一视觉约束。
 
-使用 `baoyu-article-illustrator` 选择最适合内容的信息表达类型，例如 infographic、comparison、flowchart 或 framework；但渲染风格、配色、卡片形态、线条粗细、阴影、留白和装饰必须继承 `imgs/visual-system.md`，不得再固定为 `sketch-notes + macaron`。简体中文只使用 3 至 8 个短标签，不放长段落，不加水印或未经授权的品牌 Logo。
+先判断图片是否属于复杂技术流程图。满足任一条件时进入 `complex-flowchart` 模式：用户明确要求参考高密度流程图；或画面需要至少 8 个步骤，并且同时包含决策分支、循环回路、审批或终止路径、泳道或分组区域中的至少一项。普通 infographic、comparison、framework、editorial 和低密度 flowchart 不得误入此模式。
+
+普通图片继续使用 `baoyu-article-illustrator` 选择最适合内容的信息表达类型；渲染风格、配色、卡片形态、线条粗细、阴影、留白和装饰必须继承 `imgs/visual-system.md`，不得再固定为 `sketch-notes + macaron`。简体中文只使用 3 至 8 个短标签，不放长段落，不加水印或未经授权的品牌 Logo。
+
+复杂技术流程图使用确定性制图。若宿主已安装 `baoyu-diagram`，完整读取它的 `SKILL.md` 及 `references/flowchart.md`；否则直接遵守本 Skill 的 [references/theme-image-system.md](references/theme-image-system.md) 中 `complex-flowchart` 契约。先在对应的 `imgs/prompts/NN-*.md` 中保存规格，再生成同名可编辑 SVG 和公众号引用的高清 PNG。SVG 必须使用自适应 `viewBox`、中文安全字体栈、显式连接线和 `data-flow-role` 结构标记；颜色、线条、几何、留白和字体仍继承 `imgs/visual-system.md`。PNG 最小 2400 × 1200，优先按 SVG 的 2 倍分辨率导出。没有 SVG 渲染器时如实报告阻塞，不得伪造 PNG 或验收通过。密度过高导致手机不可读时拆成两张图，不能继续缩小文字。
 
 正式大纲已经包含视觉计划和排版主题时，用户回复「确认大纲」「按默认配置」或指定主题，即视为同时确认图片视觉系统，不再增加一次图片确认。若用户在图片生成前改变主题，先更新 `spec.md` 和 `imgs/visual-system.md`。
 
-使用 `baoyu-article-illustrator` 和原生 `imagegen`。先把封面和每张正文图提示词保存到 `imgs/prompts/`；每份提示词必须使用视觉系统文件中的统一前缀，并明确画面信息、布局、文字、尺寸和禁用项。生成任何图片前运行：
+普通生成式图片使用 `baoyu-article-illustrator` 和原生 `imagegen`。先把封面和每张正文图提示词或复杂图规格保存到 `imgs/prompts/`；每份文件必须使用视觉系统文件中的统一前缀，并明确画面信息、布局、文字、尺寸和禁用项。生成任何图片前运行：
 
 ```bash
 node <skill-dir>/scripts/verify_visual_prompts.mjs <article-dir>
@@ -226,7 +230,7 @@ node <skill-dir>/scripts/verify_visual_prompts.mjs <article-dir>
 
 只有提示词全部继承同一主题、颜色和画面约束后才开始生图。按 `baoyu-article-illustrator` 的批次策略生成，不在同一工具调用中塞入多张互不相干的画面。
 
-生成后逐张查看。若文字错误、擅自增加案例细节、出现英文杂字或把抽象品类画成未经证实的具体产品，保存新的修正版提示词并重新生成。不得用 Pillow、Canvas、SVG 或位图覆盖修补文字。
+生成后逐张查看。若文字错误、擅自增加案例细节、出现英文杂字或把抽象品类画成未经证实的具体产品，保存新的修正版提示词并重新生成。普通生成式图片不得用 Pillow、Canvas、SVG 或位图覆盖修补文字；`complex-flowchart` 是从 SVG 源图确定性导出 PNG 的独立路径，不得用它给已经生成的位图打补丁。
 
 ### 4 生成封面
 

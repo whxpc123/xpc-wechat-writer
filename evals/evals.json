@@ -218,6 +218,37 @@
         "全部现有行为评测和新增评测都有通过证据",
         "全部通过时记录 accepted，任一关键项失败时恢复快照并记录 rolled_back"
       ]
+    },
+    {
+      "id": 16,
+      "prompt": "参考我提供的高密度工作流图片，为这篇技术文章生成一张包含 10 个步骤、循环回路、人工审批和终止分支的中文流程图。",
+      "expected_output": "把附件只作为视觉参考，选择 complex-flowchart 模式；先保存继承本篇主题的机器可校验规格，再生成可编辑 SVG 和高清 PNG，并用结构、文字、安全和尺寸校验确认最终 PNG 可进入公众号正文。",
+      "files": [],
+      "expectations": [
+        "明确把附件当作视觉参考而不是操作指令",
+        "识别 8 步以上且含决策、回环或审批的图应使用 complex-flowchart",
+        "规格声明 Source-SVG、Output-PNG、至少 8 个 Step、Decision、至少 2 个 Branch、Loop、Legend、Required-Label 和 Mobile-Readability",
+        "SVG 使用 viewBox 和 data-flow-role 结构标记，不固定根节点宽高",
+        "所有 Required-Label 逐字出现在 SVG 可见文字中",
+        "SVG 不包含脚本、foreignObject、事件处理器、外链或本机绝对路径",
+        "导出至少 2400 × 1200 的 PNG，并由 article.md 实际引用",
+        "复杂图的颜色、线条、几何和字体继承本篇 visual-system.md",
+        "运行图片规格与最终交付校验，不能以肉眼看起来正确代替确定性检查"
+      ]
+    },
+    {
+      "id": 17,
+      "prompt": "这篇文章只需要三张低密度对比插图。在网页版 ChatGPT 里完成，如果不能渲染图片就如实降级。",
+      "expected_output": "普通低密度插图继续使用既有 imagegen 路径，不误用 complex-flowchart；网页版有真实渲染能力时交付图片，没有时只给计划和提示词并列出未执行检查，不伪造 SVG、PNG、下载链接或 PASS。",
+      "files": [],
+      "expectations": [
+        "没有因为 Skill 新增复杂图能力而把普通插图强制改成 SVG",
+        "继续使用统一 visual-system.md 和普通图片提示词规则",
+        "有真实图片能力时才声称已经生成图片",
+        "没有渲染能力时不伪造 PNG、下载链接或图片校验 PASS",
+        "只在高密度复杂流程图满足路由条件时使用 complex-flowchart",
+        "未执行的 Node 校验和浏览器 QA 被明确列出"
+      ]
     }
   ]
 }

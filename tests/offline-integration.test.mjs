@@ -15,6 +15,8 @@ import {
 } from '../scripts/lib/learning-state.mjs';
 import { readJsonLines } from '../scripts/lib/state-io.mjs';
 import { saveDraft } from '../scripts/save_wechat_draft.mjs';
+import { validateComplexFlowchartSvg } from '../scripts/verify_delivery.mjs';
+import { parseComplexFlowchartSpec } from '../scripts/verify_visual_prompts.mjs';
 
 const PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zt9sAAAAASUVORK5CYII=',
@@ -32,6 +34,83 @@ async function articleFixture(root, articleId) {
   await writeFile(join(articleDir, 'edit-report.md'), '# 编辑报告\n\n结构与事实复核通过。\n', 'utf8');
   return articleDir;
 }
+
+function flowchartPrompt({ includeSecondBranch = true } = {}) {
+  return `Diagram-Mode: complex-flowchart
+Source-SVG: imgs/04-agent-loop.svg
+Output-PNG: imgs/04-agent-loop.png
+ASPECT: 8:5
+Mobile-Readability: 点击放大，过密时拆图
+Step-1: 用户提出目标
+Step-2: 收集当前信息
+Step-3: 模型判断下一步
+Step-4: 提出工具调用请求
+Step-5: 权限检查与审批
+Step-6: 执行真实动作
+Step-7: 返回执行结果
+Step-8: 模型接收结果并思考
+Decision-1: 是否需要人工确认
+Branch-1: 是到人工确认
+${includeSecondBranch ? 'Branch-2: 否到继续执行' : ''}
+Loop-1: 结果返回模型
+Legend-1: 主流程与循环
+Required-Label-1: 用户提出目标
+Required-Label-2: 收集当前信息
+Required-Label-3: 模型判断下一步
+Required-Label-4: 提出工具调用请求
+Required-Label-5: 权限检查与审批
+Required-Label-6: 执行真实动作
+Required-Label-7: 返回执行结果
+Required-Label-8: 模型接收结果并思考
+`;
+}
+
+test('complex flowchart spec and SVG validator accept precise diagrams and reject unsafe or incomplete ones', () => {
+  const spec = parseComplexFlowchartSpec(flowchartPrompt(), '04-agent-loop.md');
+  const labels = [
+    '用户提出目标',
+    '收集当前信息',
+    '模型判断下一步',
+    '提出工具调用请求',
+    '权限检查与审批',
+    '执行真实动作',
+    '返回执行结果',
+    '模型接收结果并思考',
+  ];
+  const stepGroups = labels
+    .map((label) => `<g data-flow-role="step"><text>${label}</text></g>`)
+    .join('');
+  const validSvg = `<svg viewBox="0 0 1600 1000" xmlns="http://www.w3.org/2000/svg">${stepGroups}<g data-flow-role="decision"><text>是否需要人工确认</text></g><path data-flow-role="branch" d="M0 0L1 1"/><path data-flow-role="branch" d="M1 1L2 2"/><path data-flow-role="loop" d="M2 2L0 0"/><g data-flow-role="legend"><text>主流程与循环</text></g></svg>`;
+
+  const result = validateComplexFlowchartSvg({
+    svg: validSvg,
+    spec,
+    dimensions: { width: 3200, height: 2000 },
+  });
+  assert.equal(result.steps, 8);
+  assert.equal(result.requiredLabels, 8);
+
+  assert.throws(
+    () => parseComplexFlowchartSpec(flowchartPrompt({ includeSecondBranch: false }), 'broken.md'),
+    /至少需要 2 个 Branch/,
+  );
+  assert.throws(
+    () => validateComplexFlowchartSvg({
+      svg: validSvg.replace('模型接收结果并思考', '缺失的标签'),
+      spec,
+      dimensions: { width: 3200, height: 2000 },
+    }),
+    /缺少必需文字/,
+  );
+  assert.throws(
+    () => validateComplexFlowchartSvg({
+      svg: validSvg.replace('</svg>', '<image href="https://example.com/a.png"/></svg>'),
+      spec,
+      dimensions: { width: 3200, height: 2000 },
+    }),
+    /包含脚本、外链或本机路径/,
+  );
+});
 
 test('offline full flow saves once, proposes safely, and restores a failed Skill patch', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'xpc-offline-flow-'));

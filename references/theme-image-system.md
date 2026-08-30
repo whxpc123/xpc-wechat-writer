@@ -7,6 +7,7 @@
 - [建立视觉系统](#建立视觉系统)
 - [六套主题映射](#六套主题映射)
 - [提示词统一前缀](#提示词统一前缀)
+- [复杂技术流程图模式](#复杂技术流程图模式)
 - [图片质量红线](#图片质量红线)
 
 ## 建立视觉系统
@@ -103,11 +104,61 @@ Color values and color names are rendering guidance only — do NOT display colo
 
 这些字段必须从 `visual-system.md` 原样复制，不能只抄颜色而忽略线条、几何、密度和纹理。正文图再追加类型专属的 `ZONES / LABELS / COLORS / STYLE / ASPECT`。封面再追加 `Content Context / Visual Design / Text Elements / Composition`。所有提示词必须先保存到 `imgs/prompts/`，再调用生成后端。
 
+## 复杂技术流程图模式
+
+只有用户明确要求高密度流程图，或画面需要至少 8 个步骤并同时出现决策、回环、审批、终止、泳道或分组区域之一时，才使用 `complex-flowchart`。普通图继续走生成式图片流程。
+
+复杂图不使用图片模型猜测长中文。读取 `baoyu-diagram` 的 `SKILL.md` 和 `references/flowchart.md`，用确定性 SVG 完成布局，再导出 PNG。默认采用横向主流程、必要时跨两行；回环走外围，分支从决策菱形直接引出，连接线不能穿过文字或节点。
+
+对应的 `imgs/prompts/NN-*.md` 在统一主题前缀后必须包含以下机器可校验字段。字段名保持英文，字段值使用文章中的真实中文：
+
+```markdown
+Diagram-Mode: complex-flowchart
+Source-SVG: imgs/04-agent-loop.svg
+Output-PNG: imgs/04-agent-loop.png
+ASPECT: 8:5 wide technical workflow
+Mobile-Readability: 公众号正文显示时可点击放大；正文最小字号 20，若仍拥挤则拆成两张图
+
+Step-1: 用户提出目标
+Step-2: 收集当前信息
+Step-3: 模型判断下一步
+Step-4: 提出工具调用请求
+Step-5: 权限检查与审批
+Step-6: 执行真实动作
+Step-7: 返回执行结果
+Step-8: 模型接收结果并思考
+Decision-1: 是否需要人工确认
+Branch-1: 是 → 人工确认
+Branch-2: 否 → 继续执行
+Loop-1: 结果返回模型并继续下一轮
+Legend-1: 主流程、循环、安全通过、终止拒绝、可扩展组件
+
+Required-Label-1: 用户提出目标
+Required-Label-2: 收集当前信息
+Required-Label-3: 模型判断下一步
+Required-Label-4: 提出工具调用请求
+Required-Label-5: 权限检查与审批
+Required-Label-6: 执行真实动作
+Required-Label-7: 返回执行结果
+Required-Label-8: 模型接收结果并思考
+```
+
+继续遵守以下绘制契约：
+
+- SVG 根节点只有自适应 `viewBox`，不写固定 `width` 或 `height`。
+- 用 `data-flow-role="step"`、`decision`、`branch`、`loop`、`legend` 标记相应 SVG 结构；数量不得少于规格声明。
+- 使用中文安全字体栈，例如 `PingFang SC, Microsoft YaHei, Noto Sans CJK SC, sans-serif`。
+- 每条 `Required-Label` 必须逐字出现在 SVG 可见文字中。长句通过 `<tspan>` 换行，但不改变文字。
+- 禁止 `script`、`foreignObject`、事件处理器、外链字体或图片、Data URL 和本机绝对路径。
+- PNG 至少 2400 × 1200，优先以 SVG 视图框的 2 倍分辨率导出；文章 Markdown 和 HTML 只引用 PNG，SVG 作为可编辑源文件保留。
+- 布局和颜色必须继承 `visual-system.md`。参考图可以影响信息结构，不能强制覆盖已确认主题。
+- 高密度图应在正文旁提示可点击查看大图；如果 390 像素手机宽度下无法辨认，拆成总览图和细节图。
+
 ## 图片质量红线
 
 - 默认正文图 1600 × 900；封面 1800 × 766、2.35:1。
 - 一张图只解决一个问题。优先流程、对比、框架和证据边界，不生成泛化装饰图。
-- 画面文字控制在 3 至 8 个短标签；每个标签尽量不超过 8 个汉字。长解释留在正文。
+- 普通生成式图片的画面文字控制在 3 至 8 个短标签；每个标签尽量不超过 8 个汉字。`complex-flowchart` 允许更多标签，但必须使用确定性 SVG、逐字校验并满足移动端拆图规则。长解释仍留在正文。
 - 数据必须来自文章，数字、日期和结论逐项核对；不得让模型补造案例或经营结果。
 - 不出现默认 AI 审美：蓝紫渐变、发光芯片、悬浮玻璃球、写实机器人、无意义城市夜景。
 - 不使用写实人物脸；需要人物时使用主题一致的符号化剪影或编辑插画。
