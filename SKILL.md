@@ -159,7 +159,7 @@ description: 为 XPC 按固定流程策划、研究、写作并交付面向中�
 - 如何扣回主线
 - 读者获得什么动作
 
-同时给出 3 至 5 张正文图和封面的视觉计划，并增加「排版与图片主题」：依据题材推荐 1 个 `gzh-design` 主题，列出全部可选主题及其适用场景。明确该主题会同时约束 HTML、正文图和封面。此时不生成图片或 HTML。
+同时给出 3 至 5 张正文图和封面的视觉计划。视觉计划第一项默认是「开篇总览图」，说明它要回答的读者问题、选择的总览类型和 3 至 7 个主干节点；该图计入 3 至 5 张，不额外增加数量。再增加「排版与图片主题」：依据题材推荐 1 个 `gzh-design` 主题，列出全部可选主题及其适用场景。明确该主题会同时约束 HTML、正文图和封面。此时不生成图片或 HTML。用户针对本篇明确要求不要开篇图时，在大纲中记录豁免理由。
 
 最后明确请求用户确认大纲，然后停止。不要提前创建最终 HTML。
 
@@ -180,7 +180,7 @@ description: 为 XPC 按固定流程策划、研究、写作并交付面向中�
 
 创建文章目录并保存
 
-- `spec.md`，确认后的主题、读者、目标、结构，以及 HTML、正文图和封面共用的视觉系统
+- `spec.md`，确认后的主题、读者、目标、结构，以及 HTML、正文图和封面共用的视觉系统；新文章默认写入 `Opening-Overview: required`，用户明确不要时写入 `Opening-Overview: omitted-by-user`
 - `research.md`，来源链接、关键数据、案例和口径限制
 - `fact-lock.md`，锁定不可改动的数据、样本、时间、来源、适用边界，以及与事实分开的作者判断
 
@@ -214,6 +214,8 @@ node <skill-dir>/scripts/verify_writing.mjs <article-dir>
 
 先读取 [references/theme-image-system.md](references/theme-image-system.md) 和所选 `gzh-design` 主题的设计变量。创建 `imgs/visual-system.md`，记录主题名、主题标识、主色、背景色、强调色、线条、几何、留白、字体气质、纹理和禁用项。该文件是本篇全部图片的单一视觉约束。
 
+先制作开篇总览图。根据文章主干从 `process-flow`、`system-map`、`architecture-map`、`decision-map`、`timeline-map`、`action-journey` 和 `comparison-path` 中选择一种，不要把所有主题都硬套成步骤流程。总览图只保留理解全文所需的 3 至 7 个主干节点，图片路径优先使用 `imgs/01-opening-overview.png`。它必须是 `article.md` 的第一张正文图，放在开场和核心判断之后、第一节 H2 之前，并在前 900 个可见正文字符内出现。详细规格读取 [references/theme-image-system.md](references/theme-image-system.md)。
+
 先判断图片是否属于复杂技术流程图。满足任一条件时进入 `complex-flowchart` 模式：用户明确要求参考高密度流程图；或画面需要至少 8 个步骤，并且同时包含决策分支、循环回路、审批或终止路径、泳道或分组区域中的至少一项。普通 infographic、comparison、framework、editorial 和低密度 flowchart 不得误入此模式。
 
 普通图片继续使用 `baoyu-article-illustrator` 选择最适合内容的信息表达类型；渲染风格、配色、卡片形态、线条粗细、阴影、留白和装饰必须继承 `imgs/visual-system.md`，不得再固定为 `sketch-notes + macaron`。简体中文只使用 3 至 8 个短标签，不放长段落，不加水印或未经授权的品牌 Logo。
@@ -231,6 +233,8 @@ node <skill-dir>/scripts/verify_visual_prompts.mjs <article-dir>
 只有提示词全部继承同一主题、颜色和画面约束后才开始生图。按 `baoyu-article-illustrator` 的批次策略生成，不在同一工具调用中塞入多张互不相干的画面。
 
 生成后逐张查看。若文字错误、擅自增加案例细节、出现英文杂字或把抽象品类画成未经证实的具体产品，保存新的修正版提示词并重新生成。普通生成式图片不得用 Pillow、Canvas、SVG 或位图覆盖修补文字；`complex-flowchart` 是从 SVG 源图确定性导出 PNG 的独立路径，不得用它给已经生成的位图打补丁。
+
+完成图片后把开篇总览图插入最终 `article.md` 的规定位置。若 `spec.md` 为 `Opening-Overview: omitted-by-user`，不得生成带 `Overview-Role: opening-overview` 的提示词，也不得在交付报告中声称已包含总览图。
 
 ### 4 生成封面
 
@@ -362,6 +366,7 @@ node <skill-dir>/scripts/save_wechat_draft.mjs <article-dir> --confirm-fingerpri
 - 选题和正式大纲必须等用户确认
 - 排版主题可逐篇选择；只确认大纲而未指定主题时使用本篇推荐项
 - 所选 `gzh-design` 主题同时控制 HTML、正文图和封面，不得回退为固定马卡龙手绘、通用蓝紫渐变或互不相关的三套视觉
+- 新文章默认把一张自适应开篇总览图作为正文第一张图；它计入原有配图数量，并可按内容选择流程、关系、架构、决策、时间线、行动路径或双路径对比
 - 未经逐篇内容指纹确认，不得写入公众号草稿
 - 不自动群发、删除、覆盖或重复创建公众号草稿
 - 发布结果不明确时标记为 `unknown`，不得自动重试或切换发布方式

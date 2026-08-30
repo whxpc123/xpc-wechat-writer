@@ -53,9 +53,19 @@ summary: 50 至 100 字摘要
 
 正文可以保留 H1，转换 HTML 时移除 H1，标题通过工作台单独复制。
 
+新文章的 `spec.md` 必须包含：
+
+```markdown
+Opening-Overview: required
+```
+
+用户明确要求本篇不要开篇图时改为 `Opening-Overview: omitted-by-user`。旧文章没有该字段时按 legacy 契约验收，不要求返工补图。
+
 ## 图片
 
 - 正文图默认 5 张
+- `Opening-Overview: required` 时，开篇总览图必须计入正文图总数，并作为 `article.md` 第一张图片
+- 开篇总览图位于开场和核心判断之后、第一节 H2 之前，前置可见正文不超过 900 字符
 - 正文图最终尺寸 1600 × 900 PNG
 - `complex-flowchart` 正文图允许按内容选择宽高比，但 PNG 不小于 2400 × 1200，并保留同名 SVG 源图
 - 封面最终尺寸 1800 × 766 PNG
@@ -112,6 +122,8 @@ summary: 50 至 100 字摘要
 - 所有图片是有效 PNG
 - 封面比例正确
 - 图片提示词全部继承 `imgs/visual-system.md` 的主题标识和主色、背景色、强调色
+- required 状态下恰好有一个 `Overview-Role: opening-overview`，类型有效、至少 3 个主干节点且输出 PNG 与正文第一张图一致
+- omitted-by-user 状态下不存在 opening-overview 规格；无标记的旧文章继续使用 legacy 验收
 - `complex-flowchart` 的步骤、决策、分支、回环、图例和必需标签通过规格校验
 - `complex-flowchart` 的 SVG 安全检查、结构标记、可见文字、PNG 尺寸和正文引用全部通过
 - 封面与正文图通过人工一致性检查，且没有通用 AI 蓝紫风或无关视觉模板

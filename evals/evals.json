@@ -249,6 +249,38 @@
         "只在高密度复杂流程图满足路由条件时使用 complex-flowchart",
         "未执行的 Node 校验和浏览器 QA 被明确列出"
       ]
+    },
+    {
+      "id": 18,
+      "prompt": "按默认流程写一篇解释 AI Agent 工作系统的公众号文章，我没有指定图片形式。",
+      "expected_output": "正式大纲和最终文章默认包含一张自适应开篇总览图；根据内容选择 system-map 或 architecture-map，计入正文图总数，放在开场与核心判断之后、第一节之前，并通过规格与位置校验。",
+      "files": [],
+      "expectations": [
+        "正式大纲的视觉计划第一项是开篇总览图，并说明读者问题、类型和主干节点",
+        "spec.md 写入 Opening-Overview: required",
+        "总览图计入原有 3 至 5 张正文图而不是额外增加第六张",
+        "根据系统组成选择 system-map 或 architecture-map，而不是机械使用固定十步流程",
+        "提示词包含 Overview-Role、Overview-Type、Overview-Purpose、Overview-Placement、Output-PNG 和至少 3 个 Overview-Node",
+        "总览图是 article.md 的第一张正文图",
+        "总览图位于开场和核心判断之后、第一节 H2 之前，且前置可见文字不超过 900 字符",
+        "节点不超过 7 个时继续使用普通图片流程，只有达到复杂阈值才使用 complex-flowchart",
+        "总览图继承本篇 visual-system.md 并进入 HTML 图片复制流程"
+      ]
+    },
+    {
+      "id": 19,
+      "prompt": "写一篇 AI 产品三年变化的文章，开头要让人一眼看懂；另一篇我明确说不要开篇图时也要尊重。",
+      "expected_output": "变化主题优先选择 timeline-map，而不是把所有内容硬套成流程步骤；默认文章生成并校验开篇总览图，用户对具体文章明确取消时记录 omitted-by-user，不生成 opening-overview 规格，也不影响后续文章的长期默认值。",
+      "files": [],
+      "expectations": [
+        "变化与演进主题选择 timeline-map，并用 3 至 7 个关键阶段概括全文",
+        "关系、决策、行动和对比主题可分别路由到对应的总览类型",
+        "没有把所有文章强制做成 complex-flowchart",
+        "用户明确要求某篇不要时，spec.md 写 Opening-Overview: omitted-by-user",
+        "omitted-by-user 状态下不创建 Overview-Role: opening-overview 规格",
+        "逐篇豁免不删除后续新文章默认总览图规则",
+        "旧文章没有 Opening-Overview 字段时继续按 legacy 契约通过"
+      ]
     }
   ]
 }

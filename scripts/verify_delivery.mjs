@@ -69,6 +69,52 @@ export function validateComplexFlowchartSvg({ svg, spec, dimensions }) {
   };
 }
 
+function visibleMarkdownLength(markdown) {
+  return markdown
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/<[^>]+>/g, '')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/[*_`>#-]/g, '')
+    .replace(/\s+/g, '')
+    .length;
+}
+
+export function validateOpeningOverviewPlacement({ body, imageRefs, overviewSpecs, status }) {
+  const normalizedStatus = String(status || 'legacy').trim().toLowerCase();
+  assert.ok(['legacy', 'required', 'omitted-by-user'].includes(normalizedStatus), `Opening-Overview 状态无效 ${normalizedStatus}`);
+
+  if (normalizedStatus === 'legacy') {
+    return { status: 'legacy', required: false, overview: null };
+  }
+  if (normalizedStatus === 'omitted-by-user') {
+    assert.equal(overviewSpecs.length, 0, 'Opening-Overview 已标记 omitted-by-user，但仍存在总览图规格');
+    return { status: normalizedStatus, required: false, overview: null };
+  }
+
+  assert.equal(overviewSpecs.length, 1, 'Opening-Overview 为 required 时必须恰好有一个总览图规格');
+  const overview = overviewSpecs[0];
+  assert.equal(imageRefs[0], overview.outputPng, `${overview.outputPng} 必须是 article.md 的第一张正文图`);
+
+  const overviewPattern = new RegExp(`!\\[[^\\]]*\\]\\(${overview.outputPng.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`);
+  const overviewIndex = body.search(overviewPattern);
+  assert.ok(overviewIndex >= 0, `${overview.outputPng} 未出现在正文中`);
+  const firstSectionIndex = body.search(/^##\s+/m);
+  assert.ok(firstSectionIndex < 0 || overviewIndex < firstSectionIndex, '开篇总览图必须位于第一节 H2 之前');
+
+  const prefixCharacters = visibleMarkdownLength(body.slice(0, overviewIndex));
+  assert.ok(prefixCharacters <= 900, `开篇总览图出现过晚，前置可见文字 ${prefixCharacters} 超过 900`);
+
+  return {
+    status: normalizedStatus,
+    required: true,
+    overview: overview.outputPng,
+    type: overview.type,
+    prefixCharacters,
+  };
+}
+
 export async function verifyDelivery(articleDirectory) {
   const root = resolve(articleDirectory ?? process.cwd());
   const markdown = await readFile(join(root, 'article.md'), 'utf8');
@@ -109,6 +155,14 @@ export async function verifyDelivery(articleDirectory) {
   }
 
   const visualVerification = await verifyVisualPrompts(root);
+  const productionSpec = await readFile(join(root, 'spec.md'), 'utf8').catch(() => '');
+  const overviewStatus = productionSpec.match(/^Opening-Overview:\s*(.+)$/mi)?.[1]?.trim() ?? 'legacy';
+  const openingOverview = validateOpeningOverviewPlacement({
+    body,
+    imageRefs,
+    overviewSpecs: visualVerification.overviewSpecs,
+    status: overviewStatus,
+  });
   const complexFlowcharts = [];
   for (const spec of visualVerification.diagramSpecs) {
     assert.ok(imageRefs.includes(spec.outputPng), `${spec.outputPng} 未被 article.md 引用`);
@@ -170,6 +224,7 @@ export async function verifyDelivery(articleDirectory) {
     copyButtons: 4,
     coverRatio: Number((cover.width / cover.height).toFixed(4)),
     dimensions,
+    openingOverview,
     complexFlowcharts,
   };
 }

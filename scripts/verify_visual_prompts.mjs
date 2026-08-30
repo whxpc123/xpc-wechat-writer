@@ -20,6 +20,16 @@ const requiredFields = [
   'Avoid',
 ];
 
+const openingOverviewTypes = new Set([
+  'process-flow',
+  'system-map',
+  'architecture-map',
+  'decision-map',
+  'timeline-map',
+  'action-journey',
+  'comparison-path',
+]);
+
 function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -78,6 +88,39 @@ export function parseComplexFlowchartSpec(prompt, filename = 'prompt.md') {
   };
 }
 
+export function parseOpeningOverviewSpec(prompt, filename = 'prompt.md') {
+  const role = scalarValue(prompt, 'Overview-Role').toLowerCase();
+  if (!role) return null;
+  assert.equal(role, 'opening-overview', `${filename} 的 Overview-Role 只能是 opening-overview`);
+
+  const type = scalarValue(prompt, 'Overview-Type').toLowerCase();
+  const purpose = scalarValue(prompt, 'Overview-Purpose');
+  const placement = scalarValue(prompt, 'Overview-Placement').toLowerCase();
+  const nodes = repeatedValues(prompt, 'Overview-Node');
+  const outputPng = assertDiagramPath(scalarValue(prompt, 'Output-PNG'), 'png', 'Output-PNG', filename);
+  const diagramMode = scalarValue(prompt, 'Diagram-Mode').toLowerCase();
+
+  assert.ok(openingOverviewTypes.has(type), `${filename} 的 Overview-Type 无效`);
+  assert.ok(purpose, `${filename} 缺少 Overview-Purpose`);
+  assert.equal(placement, 'after-opening-before-first-section', `${filename} 的 Overview-Placement 无效`);
+  assert.ok(nodes.length >= 3, `${filename} 的 opening-overview 至少需要 3 个 Overview-Node`);
+  assert.equal(new Set(nodes).size, nodes.length, `${filename} 的 Overview-Node 不得重复`);
+  if (nodes.length > 7) {
+    assert.equal(diagramMode, 'complex-flowchart', `${filename} 超过 7 个 Overview-Node 时必须使用 complex-flowchart`);
+  }
+
+  return {
+    promptFile: filename,
+    role,
+    type,
+    purpose,
+    placement,
+    nodes,
+    outputPng,
+    diagramMode: diagramMode || 'standard-image',
+  };
+}
+
 export async function verifyVisualPrompts(articleDirectory) {
   const root = resolve(articleDirectory ?? process.cwd());
   const visualSystemPath = join(root, 'imgs', 'visual-system.md');
@@ -104,6 +147,7 @@ export async function verifyVisualPrompts(articleDirectory) {
   assert.ok(promptFiles.length >= 4, `图片提示词过少 ${promptFiles.length}，至少需要封面加 3 张正文图`);
 
   const diagramSpecs = [];
+  const overviewSpecs = [];
   for (const filename of promptFiles) {
     const prompt = await readFile(join(promptsDir, filename), 'utf8');
     assert.match(prompt, /^# XPC_THEME_VISUAL_SYSTEM$/m, `${filename} 缺少主题视觉系统标记`);
@@ -113,13 +157,19 @@ export async function verifyVisualPrompts(articleDirectory) {
     assert.match(prompt, /do NOT display color names, hex codes, or palette labels/i, `${filename} 缺少防止色值渲染成文字的约束`);
     assert.match(prompt, /ASPECT|Aspect ratio/i, `${filename} 缺少画幅要求`);
     const diagramSpec = parseComplexFlowchartSpec(prompt, filename);
+    const overviewSpec = parseOpeningOverviewSpec(prompt, filename);
+    if (diagramSpec && overviewSpec) {
+      assert.equal(diagramSpec.outputPng, overviewSpec.outputPng, `${filename} 的复杂图与总览图 Output-PNG 不一致`);
+    }
     if (diagramSpec) diagramSpecs.push(diagramSpec);
+    if (overviewSpec) overviewSpecs.push(overviewSpec);
   }
 
   const sourcePaths = diagramSpecs.map((item) => item.sourceSvg);
   const outputPaths = diagramSpecs.map((item) => item.outputPng);
   assert.equal(new Set(sourcePaths).size, sourcePaths.length, 'complex-flowchart 的 Source-SVG 不得重复');
   assert.equal(new Set(outputPaths).size, outputPaths.length, 'complex-flowchart 的 Output-PNG 不得重复');
+  assert.ok(overviewSpecs.length <= 1, '每篇文章最多只能有一个 opening-overview 规格');
 
   return {
     result: 'PASS',
@@ -128,7 +178,9 @@ export async function verifyVisualPrompts(articleDirectory) {
     themeId: fields['Theme-ID'],
     promptFiles,
     complexFlowcharts: diagramSpecs.length,
+    openingOverviews: overviewSpecs.length,
     diagramSpecs,
+    overviewSpecs,
   };
 }
 

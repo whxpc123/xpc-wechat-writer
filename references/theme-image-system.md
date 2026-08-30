@@ -7,6 +7,7 @@
 - [建立视觉系统](#建立视觉系统)
 - [六套主题映射](#六套主题映射)
 - [提示词统一前缀](#提示词统一前缀)
+- [开篇总览图](#开篇总览图)
 - [复杂技术流程图模式](#复杂技术流程图模式)
 - [图片质量红线](#图片质量红线)
 
@@ -104,6 +105,39 @@ Color values and color names are rendering guidance only — do NOT display colo
 
 这些字段必须从 `visual-system.md` 原样复制，不能只抄颜色而忽略线条、几何、密度和纹理。正文图再追加类型专属的 `ZONES / LABELS / COLORS / STYLE / ASPECT`。封面再追加 `Content Context / Visual Design / Text Elements / Composition`。所有提示词必须先保存到 `imgs/prompts/`，再调用生成后端。
 
+## 开篇总览图
+
+新文章默认有且只有一张 `opening-overview`。它计入原有 3 至 5 张正文图，是 `article.md` 的第一张图片，放在开场和核心判断之后、第一节 H2 之前。用户明确要求本篇不要时，在 `spec.md` 写 `Opening-Overview: omitted-by-user`，此时不创建总览图规格。
+
+根据文章最主要的理解任务选择类型：
+
+| Overview-Type | 适用内容 | 常见结构 |
+|---|---|---|
+| `process-flow` | 任务、方法、执行过程 | 从目标到结果的顺序步骤 |
+| `system-map` | 角色、组成、相互作用 | 中心对象加关系网络 |
+| `architecture-map` | 产品、技术、组织层级 | 分层模块与连接 |
+| `decision-map` | 条件、选择、风险判断 | 决策点与分支结果 |
+| `timeline-map` | 历史、政策、产品演进 | 时间节点与阶段变化 |
+| `action-journey` | 普通读者如何行动 | 困境、判断、动作、结果 |
+| `comparison-path` | 两种以上方案 | 并行路线、差异与汇合点 |
+
+总览图只保留 3 至 7 个主干节点，不复述正文全部小节。标签、关系、数字和结论必须来自 `fact-lock.md` 或已确认大纲。提示词在统一主题前缀后加入：
+
+```markdown
+Overview-Role: opening-overview
+Overview-Type: system-map
+Overview-Purpose: 让读者先理解模型、Harness、工具和用户之间的关系
+Overview-Placement: after-opening-before-first-section
+Output-PNG: imgs/01-opening-overview.png
+Overview-Node-1: 用户目标
+Overview-Node-2: 模型判断
+Overview-Node-3: Harness 执行与反馈
+Overview-Node-4: 工具完成真实操作
+ASPECT: 16:9 article opening overview
+```
+
+3 至 7 个节点使用普通生图流程。超过 7 个节点时必须同时满足并声明 `Diagram-Mode: complex-flowchart`，再遵守下一节的确定性 SVG 契约；不要为了显得专业而增加无用节点。
+
 ## 复杂技术流程图模式
 
 只有用户明确要求高密度流程图，或画面需要至少 8 个步骤并同时出现决策、回环、审批、终止、泳道或分组区域之一时，才使用 `complex-flowchart`。普通图继续走生成式图片流程。
@@ -158,6 +192,7 @@ Required-Label-8: 模型接收结果并思考
 
 - 默认正文图 1600 × 900；封面 1800 × 766、2.35:1。
 - 一张图只解决一个问题。优先流程、对比、框架和证据边界，不生成泛化装饰图。
+- 开篇总览图只解决「读者如何先看懂全文」这一问题，不承担全部细节说明。
 - 普通生成式图片的画面文字控制在 3 至 8 个短标签；每个标签尽量不超过 8 个汉字。`complex-flowchart` 允许更多标签，但必须使用确定性 SVG、逐字校验并满足移动端拆图规则。长解释仍留在正文。
 - 数据必须来自文章，数字、日期和结论逐项核对；不得让模型补造案例或经营结果。
 - 不出现默认 AI 审美：蓝紫渐变、发光芯片、悬浮玻璃球、写实机器人、无意义城市夜景。

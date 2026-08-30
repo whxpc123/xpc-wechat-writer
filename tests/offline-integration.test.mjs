@@ -15,8 +15,14 @@ import {
 } from '../scripts/lib/learning-state.mjs';
 import { readJsonLines } from '../scripts/lib/state-io.mjs';
 import { saveDraft } from '../scripts/save_wechat_draft.mjs';
-import { validateComplexFlowchartSvg } from '../scripts/verify_delivery.mjs';
-import { parseComplexFlowchartSpec } from '../scripts/verify_visual_prompts.mjs';
+import {
+  validateComplexFlowchartSvg,
+  validateOpeningOverviewPlacement,
+} from '../scripts/verify_delivery.mjs';
+import {
+  parseComplexFlowchartSpec,
+  parseOpeningOverviewSpec,
+} from '../scripts/verify_visual_prompts.mjs';
 
 const PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zt9sAAAAASUVORK5CYII=',
@@ -65,6 +71,18 @@ Required-Label-8: 模型接收结果并思考
 `;
 }
 
+function overviewPrompt({ type = 'system-map', nodes = 4 } = {}) {
+  const nodeLines = Array.from({ length: nodes }, (_, index) => `Overview-Node-${index + 1}: 主干节点${index + 1}`).join('\n');
+  return `Overview-Role: opening-overview
+Overview-Type: ${type}
+Overview-Purpose: 帮助读者先理解全文主干
+Overview-Placement: after-opening-before-first-section
+Output-PNG: imgs/01-opening-overview.png
+${nodeLines}
+ASPECT: 16:9
+`;
+}
+
 test('complex flowchart spec and SVG validator accept precise diagrams and reject unsafe or incomplete ones', () => {
   const spec = parseComplexFlowchartSpec(flowchartPrompt(), '04-agent-loop.md');
   const labels = [
@@ -110,6 +128,80 @@ test('complex flowchart spec and SVG validator accept precise diagrams and rejec
     }),
     /包含脚本、外链或本机路径/,
   );
+});
+
+test('opening overview supports multiple forms and enforces first-image placement with explicit opt-out', () => {
+  const types = [
+    'process-flow',
+    'system-map',
+    'architecture-map',
+    'decision-map',
+    'timeline-map',
+    'action-journey',
+    'comparison-path',
+  ];
+  for (const type of types) {
+    assert.equal(parseOpeningOverviewSpec(overviewPrompt({ type }), `${type}.md`).type, type);
+  }
+
+  const overview = parseOpeningOverviewSpec(overviewPrompt(), '01-opening-overview.md');
+  const body = `开场先呈现一个具体困境。核心判断是工具只有进入完整工作系统，才能把答案变成可以交付的结果。\n\n![全文总览](imgs/01-opening-overview.png)\n\n## 第一节\n\n正文内容。`;
+  const valid = validateOpeningOverviewPlacement({
+    body,
+    imageRefs: ['imgs/01-opening-overview.png', 'imgs/02-detail.png'],
+    overviewSpecs: [overview],
+    status: 'required',
+  });
+  assert.equal(valid.overview, 'imgs/01-opening-overview.png');
+  assert.equal(valid.type, 'system-map');
+
+  assert.throws(
+    () => parseOpeningOverviewSpec(overviewPrompt({ type: 'one-fixed-template' }), 'bad-type.md'),
+    /Overview-Type 无效/,
+  );
+  assert.throws(
+    () => parseOpeningOverviewSpec(overviewPrompt({ nodes: 8 }), 'too-many-nodes.md'),
+    /必须使用 complex-flowchart/,
+  );
+  assert.throws(
+    () => validateOpeningOverviewPlacement({
+      body,
+      imageRefs: ['imgs/00-other.png', 'imgs/01-opening-overview.png'],
+      overviewSpecs: [overview],
+      status: 'required',
+    }),
+    /必须是 article.md 的第一张正文图/,
+  );
+  assert.throws(
+    () => validateOpeningOverviewPlacement({
+      body: `开场。\n\n## 第一节\n\n![全文总览](imgs/01-opening-overview.png)`,
+      imageRefs: ['imgs/01-opening-overview.png'],
+      overviewSpecs: [overview],
+      status: 'required',
+    }),
+    /必须位于第一节 H2 之前/,
+  );
+  assert.throws(
+    () => validateOpeningOverviewPlacement({
+      body: `${'文'.repeat(901)}\n\n![全文总览](imgs/01-opening-overview.png)`,
+      imageRefs: ['imgs/01-opening-overview.png'],
+      overviewSpecs: [overview],
+      status: 'required',
+    }),
+    /出现过晚/,
+  );
+  assert.equal(validateOpeningOverviewPlacement({
+    body: '正文。',
+    imageRefs: [],
+    overviewSpecs: [],
+    status: 'omitted-by-user',
+  }).required, false);
+  assert.equal(validateOpeningOverviewPlacement({
+    body: '旧文章正文。',
+    imageRefs: [],
+    overviewSpecs: [],
+    status: 'legacy',
+  }).status, 'legacy');
 });
 
 test('offline full flow saves once, proposes safely, and restores a failed Skill patch', async (t) => {
