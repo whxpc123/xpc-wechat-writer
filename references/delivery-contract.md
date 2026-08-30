@@ -20,7 +20,10 @@ YYYY-MM-DD-topic-slug/
 ├── article.html
 ├── publish.html
 ├── wechat-body.html
+├── wechat-draft.json（用户要求保存草稿后生成）
 ├── qa-report.md
+├── learning-report.md
+├── learning-signals.json（有明确反馈信号时生成）
 ├── imgs/
 │   ├── cover.png
 │   ├── 01-*.png
@@ -119,3 +122,37 @@ summary: 50 至 100 字摘要
 - 手机端不出现横向滚动
 - 文章字号和行距适合 390 像素屏幕
 - 浏览器控制台错误为 0
+
+## 公众号草稿
+
+`wechat-draft.json` 只保存非敏感状态，包括文章标识、内容指纹、账号别名、方式、输入路径、标题、摘要、状态、尝试编号、草稿标识、错误摘要和时间。不得保存 AppSecret、access token、Cookie、浏览器会话或 SSH 私钥内容。
+
+草稿保存的确定性检查：
+
+- 写作、图片、HTML 和交付验收已经全部通过
+- 使用 `article-formatted.html`，不使用复制工作台 `article.html`
+- 标题、摘要、正文图片和 `imgs/cover.png` 均存在
+- 用户确认的完整内容指纹与清单完全一致
+- 相同成功指纹不会重复提交
+- 每次确认最多调用发布适配器一次
+- 成功时 API 记录 `media_id`，浏览器方式记录 `appmsgid`
+- 浏览器方式记录 `cover_verification_required: true`
+- 结果不明确时状态为 `unknown`，自动重试次数为 0
+- 草稿失败不改变本地交付完成状态
+
+## 交付复盘
+
+每篇文章完成后生成 `learning-report.md`，记录 QA 状态、草稿状态、本篇反馈摘要和达到门槛的候选规则。没有反馈信号时仍生成报告，但不得凭模型猜测创建长期偏好。
+
+`learning-signals.json` 仅在有明确用户反馈、QA 失败、返工或有效做法需要记录时创建。它不得包含完整正文或任何账号凭据。长期学习状态保存在文章根目录的 `_xpc-wechat-state/` 或本机配置指定的 Skill 外部目录，不得打包进可安装 Skill。
+
+持续优化的确定性检查：
+
+- 普通问题至少来自 3 篇独立文章，明确长期偏好可以立即生成提案
+- 模型自评不能单独触发提案
+- 冲突方向阻止提案晋升
+- 提案包含证据、影响文件、补丁预览、风险、回滚和新增评测
+- 未经批准时 Skill 文件哈希保持不变
+- 批准后先快照再修改
+- 快速校验、确定性测试或行为评测失败时恢复快照
+- 日志、提案、决策和快照清单不含凭据

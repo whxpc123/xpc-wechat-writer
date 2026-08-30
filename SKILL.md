@@ -1,6 +1,6 @@
 ---
 name: xpc-wechat-writer
-description: 为 XPC 按固定流程策划、研究、写作并交付面向中国普通用户的 AI 公众号长文。只要用户提到继续下一篇、公众号选题、选第几个题、继续同批第二个题、提供某个候选的大纲、确认大纲、写这个选题、优化写作、去 AI 味、选择公众号排版主题、生成公众号 HTML、复制正文图片、标题摘要或 2.35:1 封面，就应使用本 Skill，即使用户只说「1」「确认」「继续选题 2」。它负责保存每批 5 个候选及其写作状态，允许多个候选逐篇完成；同时执行热点研究和 HKR 选题、两次确认、写前编辑卡、事实锁定、分原型叙事、结构精修与句子去 AI 味、真实案例与口径核查、可选 gzh-design 主题排版、原创配图、封面、手机电脑自适应复制工作台，并为每篇文章建立独立目录。不要用于小红书短帖、微博短文、纯下载公众号文章或自动发布。
+description: 为 XPC 按固定流程策划、研究、写作并交付面向中国普通用户的 AI 公众号长文。只要用户提到继续下一篇、公众号选题、确认大纲、写文章、优化写作、去 AI 味、公众号排版、生成 HTML、正文图片、标题摘要、封面、保存到公众号草稿、记录长期写作偏好或优化本 Skill，就应使用本 Skill。它维护选题状态，完成研究、事实锁定、写作、原创配图、可复制 HTML 与 QA；经逐篇确认后调用 baoyu-post-to-wechat 保存草稿，并把反馈沉淀为需用户批准和回归评测的优化提案。不要用于小红书短帖、微博短文、纯下载公众号文章、自动群发或未经批准修改自身规则。
 ---
 
 # XPC 公众号文章生产线
@@ -22,6 +22,10 @@ description: 为 XPC 按固定流程策划、研究、写作并交付面向中�
 正文写作前完整阅读 [references/writing-style.md](references/writing-style.md) 和 [references/writing-workflow.md](references/writing-workflow.md)。前者约束阅读感与硬规则，后者约束写前编辑卡、文章原型、两轮编辑和事实锁定。
 
 创建目录、图片和 HTML 前阅读 [references/delivery-contract.md](references/delivery-contract.md)。
+
+本地验收通过且用户要求保存到公众号草稿时，完整阅读 [references/wechat-draft-publishing.md](references/wechat-draft-publishing.md)。
+
+每篇文章交付后或用户要求记住长期偏好、优化本 Skill 时，完整阅读 [references/continuous-improvement.md](references/continuous-improvement.md)。
 
 确定排版主题和生成公众号 HTML 前阅读 [references/gzh-layout-integration.md](references/gzh-layout-integration.md)。
 
@@ -62,8 +66,12 @@ description: 为 XPC 按固定流程策划、研究、写作并交付面向中�
 | 「用 gzh-design 排版这篇文章」 | 已指定主题或说按推荐主题时直接排；否则先给推荐项和全部可选主题 |
 | 「开始写作」「开始写这篇文章」「按这个写」回复或引用已经输出的正式大纲 | 视为正式大纲已确认，直接进入完整制作阶段，不重新生成大纲 |
 | 指出复制、图片、署名或排版问题 | 修复当前文章，不重新选题 |
+| 「保存到草稿」「放到公众号草稿箱」 | 已准备当前内容指纹时进入逐篇确认和草稿保存；未准备时先完成本地验收与草稿清单 |
+| 「以后都这样」「记住这个规则」「优化这个 Skill」 | 记录学习信号或生成完整优化提案；未经具体提案批准不得修改 Skill |
 
 只有选题和正式大纲是强制确认点。排版主题允许用户逐篇选择，但不新增强制确认点：在正式大纲中给出推荐项和全部主题，用户可在确认大纲时一起指定；只回复「确认」或「按默认配置」时使用本篇推荐主题。
+
+用户只回复「确认」时，把它绑定到最近一次明确展示的确认对象。若最近展示的是草稿账号、方式和内容指纹，则只确认草稿；若最近展示的是具体优化提案编号，则只批准该提案。不得把不同阶段的确认互相替代。
 
 同一批候选彼此独立。完成候选 1 后，不得把候选 2 当作全新无来源主题，也不得沿用候选 1 的正文、研究文件或文章目录。当前批次在 5 个候选全部完成、跳过，或用户明确要求开始新一批之前一直有效。
 
@@ -293,6 +301,34 @@ node <skill-dir>/scripts/verify_delivery.mjs <article-dir>
 
 保存 `qa-report.md`。若任何复制、图片或口径检查失败，修复并重新构建，不要把半成品交给用户。
 
+### 9 保存到公众号草稿
+
+只有用户明确要求保存草稿，且本篇写作、图片、HTML 与交付验收全部通过时才进入本阶段。先完整阅读 [references/wechat-draft-publishing.md](references/wechat-draft-publishing.md) 和解析到的 `baoyu-post-to-wechat/SKILL.md`。
+
+先运行：
+
+```bash
+node <skill-dir>/scripts/prepare_wechat_draft.mjs <article-dir> --method <method> --account <alias>
+```
+
+展示账号、方式、标题、摘要、图片数量、封面和完整内容指纹，然后停止等待本篇明确确认。确认只对该账号、方式和内容指纹有效。
+
+收到确认后运行：
+
+```bash
+node <skill-dir>/scripts/save_wechat_draft.mjs <article-dir> --confirm-fingerprint <fingerprint> --method <method> --account <alias>
+```
+
+不得自动重试、切换方式或群发。发布失败或结果不明确不改变本地文章已经完成的状态。浏览器方式成功后提示用户人工核对公众号外部封面。
+
+### 10 交付复盘与受控优化
+
+完整阅读 [references/continuous-improvement.md](references/continuous-improvement.md)。每篇文章完成后运行 `record_learning.mjs` 生成 `learning-report.md`。只记录本篇信息和明确反馈，不把模型猜测伪装成用户偏好。
+
+达到证据门槛时可以生成完整优化提案，但必须展示提案编号、证据、影响文件、补丁预览、风险和新增评测，然后停止等待用户对该提案的批准。未经批准不得运行 `approve`、创建快照或修改 Skill。
+
+批准后先运行 `verify_improvement.mjs snapshot`，再用最小补丁修改提案列出的文件。最后运行 Skill 快速校验、全部确定性测试、全部旧行为评测和新增评测。任何关键检查失败都要回滚，不得把失败版本留作后续默认规则。
+
 ## 最终交付
 
 最终回复只突出结果
@@ -300,10 +336,14 @@ node <skill-dir>/scripts/verify_delivery.mjs <article-dir>
 - `article.html` 的可点击绝对路径
 - `article.md` 的可点击绝对路径
 - `qa-report.md` 的可点击绝对路径
+- 用户要求保存草稿时，`wechat-draft.json` 的可点击绝对路径和当前状态
+- 草稿成功时，API 报告 `media_id`，浏览器方式报告 `appmsgid` 和封面核对提醒
+- `learning-report.md` 的可点击绝对路径
+- 有新优化提案时，提案 Markdown 的可点击绝对路径和当前状态
 - 简短说明复制测试、图片数量和封面比例
 - 可选展示封面预览
 
-不要自动发布到公众号，不要替用户发送外部消息。
+不要自动群发公众号文章，不要替用户发送外部消息。只有用户针对当前内容指纹明确确认后，才可以保存到公众号草稿箱。
 
 ## 用户纠错的长期规则
 
@@ -318,3 +358,9 @@ node <skill-dir>/scripts/verify_delivery.mjs <article-dir>
 - 选题和正式大纲必须等用户确认
 - 排版主题可逐篇选择；只确认大纲而未指定主题时使用本篇推荐项
 - 所选 `gzh-design` 主题同时控制 HTML、正文图和封面，不得回退为固定马卡龙手绘、通用蓝紫渐变或互不相关的三套视觉
+- 未经逐篇内容指纹确认，不得写入公众号草稿
+- 不自动群发、删除、覆盖或重复创建公众号草稿
+- 发布结果不明确时标记为 `unknown`，不得自动重试或切换发布方式
+- 自动记录反馈不等于自动修改 Skill
+- 未经用户对具体提案编号的明确批准，不得修改 Skill 文件
+- 修改前必须保存影响文件快照；快速校验、确定性测试或行为评测失败时必须回滚
