@@ -137,6 +137,28 @@ $xpc-wechat-writer 继续下一篇
 
 系统会先展示草稿摘要和内容指纹，再等待最终保存确认。
 
+## 网页版 ChatGPT 使用
+
+网页版 ChatGPT 不会因为仓库公开就自动安装这个 Skill。先在 ChatGPT 的应用设置中连接 GitHub，并允许它读取 `whxpc123/xpc-wechat-writer`，然后在对话中明确要求读取仓库文件。
+
+仓库根目录提供了专门的 [CHATGPT-WEB.md](CHATGPT-WEB.md)，其中包含：
+
+- GitHub 连接后的使用步骤
+- 可直接复制到 GPT-5.6 Sol Pro 对话中的启动提示词
+- 标题、摘要、正文、图片和 `article.html` 的交付顺序
+- 四个复制按钮的 HTML 契约
+- 网页端缺少脚本、图片或发布工具时的降级规则
+- 公众号草稿的逐篇确认边界
+
+连接 GitHub 后，可以先发送：
+
+```text
+请读取 GitHub 仓库 whxpc123/xpc-wechat-writer 中的 CHATGPT-WEB.md 和 SKILL.md，
+按网页兼容模式把我随后提供的知识资料写成公众号文章，并生成可复制的 article.html。
+```
+
+GitHub 应用只提供仓库读取能力。能否生成图片、下载 HTML 或保存公众号草稿，取决于当前 ChatGPT 会话实际可用的工具；工具不可用时必须如实降级，不能伪造执行结果。
+
 每篇文章完成后会生成 `learning-report.md`。普通问题需要在至少 3 篇独立文章中重复出现，明确长期偏好可以立即成为提案候选。提案不会自动修改 Skill；只有用户批准、影响文件已快照且全部旧评测与新增评测通过后才接受升级，失败会回滚。
 
 也可以直接提供自定义主题：
