@@ -180,7 +180,7 @@ description: 为 XPC 按固定流程策划、研究、写作并交付面向中�
 
 创建文章目录并保存
 
-- `spec.md`，确认后的主题、读者、目标、结构，以及 HTML、正文图和封面共用的视觉系统；新文章默认写入 `Opening-Overview: required`，用户明确不要时写入 `Opening-Overview: omitted-by-user`
+- `spec.md`，确认后的主题、读者、目标、结构，以及 HTML、正文图和封面共用的视觉系统；新文章默认写入 `Opening-Overview: required` 和 `Body-Image-Profile: knowledge-card-2.0-adapted`，用户明确不要开篇图时把前者写为 `Opening-Overview: omitted-by-user`
 - `research.md`，来源链接、关键数据、案例和口径限制
 - `fact-lock.md`，锁定不可改动的数据、样本、时间、来源、适用边界，以及与事实分开的作者判断
 
@@ -219,6 +219,8 @@ node <skill-dir>/scripts/verify_writing.mjs <article-dir>
 先判断图片是否属于复杂技术流程图。满足任一条件时进入 `complex-flowchart` 模式：用户明确要求参考高密度流程图；或画面需要至少 8 个步骤，并且同时包含决策分支、循环回路、审批或终止路径、泳道或分组区域中的至少一项。普通 infographic、comparison、framework、editorial 和低密度 flowchart 不得误入此模式。
 
 普通图片继续使用 `baoyu-article-illustrator` 选择最适合内容的信息表达类型；渲染风格、配色、卡片形态、线条粗细、阴影、留白和装饰必须继承 `imgs/visual-system.md`，不得再固定为 `sketch-notes + macaron`。简体中文只使用 3 至 8 个短标签，不放长段落，不加水印或未经授权的品牌 Logo。
+
+普通正文图和普通开篇总览图默认使用 `knowledge-card-2.0-adapted` 质量层。它只吸收资料卡提示词中的 60-30-10 信息层级、呼吸感、阅读动线、标签与容器及具象插画绑定、内容驱动构图，不复制其中的 3:4 竖版、多图同画布、固定手绘涂鸦、强制投影或马克笔配色。优先级固定为：`fact-lock.md` 事实 → 图片角色 → 画幅锁定 → 所选 `gzh-design` 主题 → 质量层。普通正文图始终为 1600 × 900、16:9；主题禁止阴影时使用细线、色块或错层表达层级，不得为了质量层破坏主题。复杂技术流程图继续使用确定性 SVG 和已声明比例，封面继续使用 1800 × 766、2.35:1。
 
 复杂技术流程图使用确定性制图。若宿主已安装 `baoyu-diagram`，完整读取它的 `SKILL.md` 及 `references/flowchart.md`；否则直接遵守本 Skill 的 [references/theme-image-system.md](references/theme-image-system.md) 中 `complex-flowchart` 契约。先在对应的 `imgs/prompts/NN-*.md` 中保存规格，再生成同名可编辑 SVG 和公众号引用的高清 PNG。SVG 必须使用自适应 `viewBox`、中文安全字体栈、显式连接线和 `data-flow-role` 结构标记；颜色、线条、几何、留白和字体仍继承 `imgs/visual-system.md`。PNG 最小 2400 × 1200，优先按 SVG 的 2 倍分辨率导出。没有 SVG 渲染器时如实报告阻塞，不得伪造 PNG 或验收通过。密度过高导致手机不可读时拆成两张图，不能继续缩小文字。
 

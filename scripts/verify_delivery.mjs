@@ -3,7 +3,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { verifyVisualPrompts } from './verify_visual_prompts.mjs';
+import { BODY_IMAGE_PROFILE, verifyVisualPrompts } from './verify_visual_prompts.mjs';
 
 const scriptPath = fileURLToPath(import.meta.url);
 
@@ -115,6 +115,39 @@ export function validateOpeningOverviewPlacement({ body, imageRefs, overviewSpec
   };
 }
 
+export function validateBodyImageProfileDelivery({ profile, bodyImageSpecs, imageRefs, dimensions }) {
+  const normalizedProfile = String(profile || 'legacy').trim().toLowerCase();
+  if (normalizedProfile === 'legacy') {
+    return {
+      profile: 'legacy',
+      checkedOutputs: [],
+      ordinaryOutputs: [],
+      complexOutputs: [],
+    };
+  }
+  assert.equal(normalizedProfile, BODY_IMAGE_PROFILE, `正文图片 profile 无效 ${normalizedProfile}`);
+
+  const expectedOutputs = bodyImageSpecs.map((item) => item.outputPng).sort();
+  const referencedOutputs = [...imageRefs].sort();
+  assert.deepEqual(expectedOutputs, referencedOutputs, '正文引用与 profile 输出必须一一对应');
+
+  const ordinaryOutputs = bodyImageSpecs.filter((item) => !item.complex).map((item) => item.outputPng);
+  const complexOutputs = bodyImageSpecs.filter((item) => item.complex).map((item) => item.outputPng);
+  for (const outputPng of ordinaryOutputs) {
+    const size = dimensions[outputPng];
+    assert.ok(size, `${outputPng} 缺少 PNG 尺寸`);
+    assert.equal(size.width, 1600, `${outputPng} 普通正文图宽度必须为 1600，高度必须为 900`);
+    assert.equal(size.height, 900, `${outputPng} 普通正文图宽度必须为 1600，高度必须为 900`);
+  }
+
+  return {
+    profile: normalizedProfile,
+    checkedOutputs: expectedOutputs,
+    ordinaryOutputs,
+    complexOutputs,
+  };
+}
+
 export async function verifyDelivery(articleDirectory) {
   const root = resolve(articleDirectory ?? process.cwd());
   const markdown = await readFile(join(root, 'article.md'), 'utf8');
@@ -155,6 +188,12 @@ export async function verifyDelivery(articleDirectory) {
   }
 
   const visualVerification = await verifyVisualPrompts(root);
+  const bodyImageProfile = validateBodyImageProfileDelivery({
+    profile: visualVerification.bodyImageProfile,
+    bodyImageSpecs: visualVerification.bodyImageSpecs,
+    imageRefs,
+    dimensions,
+  });
   const productionSpec = await readFile(join(root, 'spec.md'), 'utf8').catch(() => '');
   const overviewStatus = productionSpec.match(/^Opening-Overview:\s*(.+)$/mi)?.[1]?.trim() ?? 'legacy';
   const openingOverview = validateOpeningOverviewPlacement({
@@ -224,6 +263,7 @@ export async function verifyDelivery(articleDirectory) {
     copyButtons: 4,
     coverRatio: Number((cover.width / cover.height).toFixed(4)),
     dimensions,
+    bodyImageProfile,
     openingOverview,
     complexFlowcharts,
   };

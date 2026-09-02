@@ -16,10 +16,12 @@ import {
 import { readJsonLines } from '../scripts/lib/state-io.mjs';
 import { saveDraft } from '../scripts/save_wechat_draft.mjs';
 import {
+  validateBodyImageProfileDelivery,
   validateComplexFlowchartSvg,
   validateOpeningOverviewPlacement,
 } from '../scripts/verify_delivery.mjs';
 import {
+  parseBodyImageProfile,
   parseComplexFlowchartSpec,
   parseOpeningOverviewSpec,
 } from '../scripts/verify_visual_prompts.mjs';
@@ -82,6 +84,130 @@ ${nodeLines}
 ASPECT: 16:9
 `;
 }
+
+function bodyImagePrompt({
+  outputPng = 'imgs/02-detail.png',
+  aspectLock = '16:9',
+  canvas = '1600x900',
+  aspect = '16:9 landscape body image',
+  complex = false,
+  extra = '',
+} = {}) {
+  const labels = complex
+    ? ''
+    : `Label-1: \`模型判断\` | Container: 主题卡片 | Illustration: 大脑线稿
+Label-2: \`工具执行\` | Container: 操作卡片 | Illustration: 扳手图标
+Label-3: \`结果反馈\` | Container: 回执卡片 | Illustration: 回环箭头`;
+  return `Body-Image-Profile: knowledge-card-2.0-adapted
+Image-Role: body
+Output-PNG: ${outputPng}
+Information-Question: 读者如何理解信息从判断到执行再到反馈
+Layout-Family: process-horizontal
+Palette-Balance: 60-30-10 using selected theme colors
+Whitespace-Strategy: 保留充足呼吸区，避免边缘拥挤
+Depth-Treatment: theme-compatible layering, no forced shadow
+Reading-Flow: 从左到右，用编号和箭头连接主节点
+Aspect-Lock: ${aspectLock}
+Canvas: ${canvas}
+ASPECT: ${aspect}
+${labels}
+${complex ? flowchartPrompt() : ''}
+${extra}`;
+}
+
+test('body image profile preserves landscape canvas and rejects portrait contamination', () => {
+  const ordinary = parseBodyImageProfile(bodyImagePrompt(), '02-detail.md');
+  assert.equal(ordinary.profile, 'knowledge-card-2.0-adapted');
+  assert.equal(ordinary.aspectLock, '16:9');
+  assert.equal(ordinary.canvas, '1600x900');
+  assert.equal(ordinary.labels.length, 3);
+  assert.equal(ordinary.complex, false);
+
+  assert.throws(
+    () => parseBodyImageProfile(bodyImagePrompt({ extra: 'Source-Ratio: 3:4 portrait' }), 'portrait.md'),
+    /3:4|竖版|portrait/i,
+  );
+  assert.throws(
+    () => parseBodyImageProfile(bodyImagePrompt({ extra: 'Source-Canvas: 750×1000' }), 'portrait-size.md'),
+    /750.*1000|竖版|portrait/i,
+  );
+  assert.throws(
+    () => parseBodyImageProfile(bodyImagePrompt().replace(/^Reading-Flow:.*\n/m, ''), 'missing-flow.md'),
+    /Reading-Flow/,
+  );
+  assert.throws(
+    () => parseBodyImageProfile(bodyImagePrompt({ outputPng: 'imgs/../outside.png' }), 'unsafe-output.md'),
+    /Output-PNG.*路径无效|不得包含/,
+  );
+
+  const complex = parseBodyImageProfile(bodyImagePrompt({
+    outputPng: 'imgs/04-agent-loop.png',
+    aspectLock: 'declared-spec',
+    canvas: 'adaptive-from-svg',
+    aspect: '8:5 wide technical workflow',
+    complex: true,
+  }), '04-agent-loop.md');
+  assert.equal(complex.aspectLock, 'declared-spec');
+  assert.equal(complex.canvas, 'adaptive-from-svg');
+  assert.equal(complex.complex, true);
+});
+
+test('body image delivery keeps ordinary images at 1600x900 and preserves declared complex ratios', () => {
+  const first = parseBodyImageProfile(bodyImagePrompt({ outputPng: 'imgs/01-opening-overview.png' }), '01-opening-overview.md');
+  const second = parseBodyImageProfile(bodyImagePrompt({ outputPng: 'imgs/02-detail.png' }), '02-detail.md');
+  const complex = parseBodyImageProfile(bodyImagePrompt({
+    outputPng: 'imgs/04-agent-loop.png',
+    aspectLock: 'declared-spec',
+    canvas: 'adaptive-from-svg',
+    aspect: '8:5 wide technical workflow',
+    complex: true,
+  }), '04-agent-loop.md');
+  const bodyImageSpecs = [first, second, complex];
+  const imageRefs = bodyImageSpecs.map((item) => item.outputPng);
+  const dimensions = {
+    'imgs/01-opening-overview.png': { width: 1600, height: 900 },
+    'imgs/02-detail.png': { width: 1600, height: 900 },
+    'imgs/04-agent-loop.png': { width: 3200, height: 2000 },
+  };
+
+  const valid = validateBodyImageProfileDelivery({
+    profile: 'knowledge-card-2.0-adapted',
+    bodyImageSpecs,
+    imageRefs,
+    dimensions,
+  });
+  assert.equal(valid.checkedOutputs.length, 3);
+  assert.equal(valid.ordinaryOutputs.length, 2);
+  assert.equal(valid.complexOutputs.length, 1);
+
+  assert.throws(
+    () => validateBodyImageProfileDelivery({
+      profile: 'knowledge-card-2.0-adapted',
+      bodyImageSpecs,
+      imageRefs,
+      dimensions: {
+        ...dimensions,
+        'imgs/02-detail.png': { width: 750, height: 1000 },
+      },
+    }),
+    /1600.*900/,
+  );
+  assert.throws(
+    () => validateBodyImageProfileDelivery({
+      profile: 'knowledge-card-2.0-adapted',
+      bodyImageSpecs,
+      imageRefs: imageRefs.slice(0, -1),
+      dimensions,
+    }),
+    /正文引用.*profile 输出|profile 输出.*正文引用/,
+  );
+  assert.equal(validateBodyImageProfileDelivery({
+    profile: 'legacy',
+    bodyImageSpecs: [],
+    imageRefs: ['imgs/legacy.png'],
+    dimensions: { 'imgs/legacy.png': { width: 1200, height: 800 } },
+  }).profile, 'legacy');
+});
 
 test('complex flowchart spec and SVG validator accept precise diagrams and reject unsafe or incomplete ones', () => {
   const spec = parseComplexFlowchartSpec(flowchartPrompt(), '04-agent-loop.md');

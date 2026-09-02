@@ -281,6 +281,37 @@
         "逐篇豁免不删除后续新文章默认总览图规则",
         "旧文章没有 Opening-Overview 字段时继续按 legacy 契约通过"
       ]
+    },
+    {
+      "id": 20,
+      "prompt": "以后正文配图都参考我给的资料卡片 2.0 提示词提升质感，但公众号画面比例保持不变。按默认主题生成三张普通正文图。",
+      "expected_output": "把资料卡片 2.0 作为主题感知的正文图质量层而不是原样复制；三张普通正文图使用 knowledge-card-2.0-adapted、1600×900 和 16:9，吸收 60-30-10、留白、阅读动线、标签容器绑定和内容驱动构图，同时拒绝 3:4 与 750×1000 污染。",
+      "files": [],
+      "expectations": [
+        "spec.md 写入 Body-Image-Profile: knowledge-card-2.0-adapted",
+        "每份普通正文图提示词声明 Image-Role、唯一 Output-PNG、Information-Question 和 Layout-Family",
+        "提示词使用本篇 visual-system.md 的颜色执行 60-30-10，不把固定马卡龙或手账颜色覆盖到主题上",
+        "每份普通正文图提示词声明 Whitespace-Strategy、Depth-Treatment、Reading-Flow、Aspect-Lock: 16:9 和 Canvas: 1600x900",
+        "每张普通正文图使用 3 至 8 个反引号锁定的短标签，并为标签绑定 Container 与 Illustration",
+        "提示词不包含 3:4、750×1000、portrait-only、多图拼接或强制固定手绘风",
+        "verify_visual_prompts.mjs 在生图前通过，verify_delivery.mjs 确认普通正文 PNG 精确为 1600×900",
+        "正文引用图片与各提示词 Output-PNG 一一对应"
+      ]
+    },
+    {
+      "id": 21,
+      "prompt": "这篇用石墨极简风：普通正文图继续横版，其中一张高密度流程图按内容决定宽高比，封面比例也不要改变。",
+      "expected_output": "知识卡质量层服从石墨极简主题：普通正文图保持无装饰阴影的 16:9，复杂流程图使用 declared-spec 和确定性 SVG 保留声明比例，封面不应用正文 profile 并保持 2.35:1。",
+      "files": [],
+      "expectations": [
+        "石墨极简主题继续使用白底、灰阶细线、大留白和克制橙色，不因资料卡 2.0 强制增加手绘投影、马克笔或马卡龙配色",
+        "普通正文图使用 Aspect-Lock: 16:9、Canvas: 1600x900，最终 PNG 精确为 1600×900",
+        "高密度流程图使用 Diagram-Mode: complex-flowchart、Aspect-Lock: declared-spec 和 Canvas: adaptive-from-svg",
+        "复杂流程图继续交付安全的可编辑 SVG 与至少 2400×1200 的 PNG，不被强制裁成 16:9",
+        "封面不声明 Body-Image-Profile，继续使用 1800×766、2.35:1",
+        "所有图片仍继承同一个 visual-system.md，事实与标签来自 fact-lock.md 或已确认大纲",
+        "旧文章没有 Body-Image-Profile 时按 legacy 契约通过，不要求返工"
+      ]
     }
   ]
 }

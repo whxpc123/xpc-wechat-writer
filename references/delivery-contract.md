@@ -57,9 +57,12 @@ summary: 50 至 100 字摘要
 
 ```markdown
 Opening-Overview: required
+Body-Image-Profile: knowledge-card-2.0-adapted
 ```
 
 用户明确要求本篇不要开篇图时改为 `Opening-Overview: omitted-by-user`。旧文章没有该字段时按 legacy 契约验收，不要求返工补图。
+
+`Body-Image-Profile` 用于新文章的正文图提示词和尺寸验收。旧文章没有该字段时只跳过新增的 profile 检查，不跳过原有图片、主题和安全检查。
 
 ## 图片
 
@@ -67,6 +70,8 @@ Opening-Overview: required
 - `Opening-Overview: required` 时，开篇总览图必须计入正文图总数，并作为 `article.md` 第一张图片
 - 开篇总览图位于开场和核心判断之后、第一节 H2 之前，前置可见正文不超过 900 字符
 - 正文图最终尺寸 1600 × 900 PNG
+- 启用 `knowledge-card-2.0-adapted` 时，每份非封面图片提示词必须声明唯一 `Output-PNG`；其集合与 `article.md` 正文 PNG 引用一一对应
+- 启用该 profile 的普通正文图必须精确为 1600 × 900、16:9；提示词不得包含 3:4、750×1000 或 portrait-only 画幅指令
 - `complex-flowchart` 正文图允许按内容选择宽高比，但 PNG 不小于 2400 × 1200，并保留同名 SVG 源图
 - 封面最终尺寸 1800 × 766 PNG
 - 封面比例允许误差小于 0.01
@@ -122,6 +127,8 @@ Opening-Overview: required
 - 所有图片是有效 PNG
 - 封面比例正确
 - 图片提示词全部继承 `imgs/visual-system.md` 的主题标识和主色、背景色、强调色
+- 新 profile 文章的普通正文提示词包含信息问题、横版构图家族、60-30-10 主题配色、留白、主题兼容层次、阅读动线、16:9 画幅锁和 3 至 8 个绑定容器与具象插画的短标签
+- 新 profile 文章的正文提示词输出与 Markdown 图片引用一一对应；普通正文 PNG 精确为 1600 × 900，复杂图使用 `declared-spec`，封面不使用正文 profile
 - required 状态下恰好有一个 `Overview-Role: opening-overview`，类型有效、至少 3 个主干节点且输出 PNG 与正文第一张图一致
 - omitted-by-user 状态下不存在 opening-overview 规格；无标记的旧文章继续使用 legacy 验收
 - `complex-flowchart` 的步骤、决策、分支、回环、图例和必需标签通过规格校验

@@ -30,6 +30,10 @@ const openingOverviewTypes = new Set([
   'comparison-path',
 ]);
 
+export const BODY_IMAGE_PROFILE = 'knowledge-card-2.0-adapted';
+
+const portraitContamination = /(?:\b3\s*[:：]\s*4\b|750\s*[x×*]\s*1000|\bportrait(?:-only)?\b|3\s*比\s*4\s*竖版)/i;
+
 function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -121,11 +125,81 @@ export function parseOpeningOverviewSpec(prompt, filename = 'prompt.md') {
   };
 }
 
+export function parseBodyImageProfile(prompt, filename = 'prompt.md') {
+  const profile = scalarValue(prompt, 'Body-Image-Profile').toLowerCase();
+  if (!profile) return null;
+  assert.equal(profile, BODY_IMAGE_PROFILE, `${filename} 的 Body-Image-Profile 无效`);
+  assert.equal(portraitContamination.test(prompt), false, `${filename} 包含 3:4、750×1000 或竖版画幅污染`);
+
+  const imageRole = scalarValue(prompt, 'Image-Role').toLowerCase();
+  const outputPng = assertDiagramPath(scalarValue(prompt, 'Output-PNG'), 'png', 'Output-PNG', filename);
+  const informationQuestion = scalarValue(prompt, 'Information-Question');
+  const layoutFamily = scalarValue(prompt, 'Layout-Family');
+  const paletteBalance = scalarValue(prompt, 'Palette-Balance');
+  const whitespaceStrategy = scalarValue(prompt, 'Whitespace-Strategy');
+  const depthTreatment = scalarValue(prompt, 'Depth-Treatment');
+  const readingFlow = scalarValue(prompt, 'Reading-Flow');
+  const aspectLock = scalarValue(prompt, 'Aspect-Lock').toLowerCase();
+  const canvas = scalarValue(prompt, 'Canvas').toLowerCase().replace(/[×*]/g, 'x').replace(/\s+/g, '');
+  const aspect = scalarValue(prompt, 'ASPECT');
+  const labels = repeatedValues(prompt, 'Label');
+  const complex = scalarValue(prompt, 'Diagram-Mode').toLowerCase() === 'complex-flowchart';
+
+  assert.equal(imageRole, 'body', `${filename} 的 Image-Role 必须为 body`);
+  assert.ok(informationQuestion, `${filename} 缺少 Information-Question`);
+  assert.ok(layoutFamily, `${filename} 缺少 Layout-Family`);
+  assert.match(paletteBalance, /60\s*[-–—]\s*30\s*[-–—]\s*10/, `${filename} 的 Palette-Balance 必须声明 60-30-10`);
+  assert.ok(whitespaceStrategy, `${filename} 缺少 Whitespace-Strategy`);
+  assert.ok(depthTreatment, `${filename} 缺少 Depth-Treatment`);
+  assert.ok(readingFlow, `${filename} 缺少 Reading-Flow`);
+  assert.ok(aspect, `${filename} 缺少 ASPECT`);
+
+  if (complex) {
+    assert.equal(aspectLock, 'declared-spec', `${filename} 的 complex-flowchart 必须使用 Aspect-Lock: declared-spec`);
+    assert.equal(canvas, 'adaptive-from-svg', `${filename} 的 complex-flowchart 必须使用 Canvas: adaptive-from-svg`);
+  } else {
+    assert.equal(aspectLock, '16:9', `${filename} 的普通正文图必须使用 Aspect-Lock: 16:9`);
+    assert.equal(canvas, '1600x900', `${filename} 的普通正文图必须使用 Canvas: 1600x900`);
+    assert.match(aspect, /16\s*[:：]\s*9/, `${filename} 的普通正文图 ASPECT 必须为 16:9`);
+    assert.ok(labels.length >= 3 && labels.length <= 8, `${filename} 的普通正文图需要 3 至 8 个 Label`);
+    for (const label of labels) {
+      assert.match(label, /`[^`]+`/, `${filename} 的 Label 文字必须用反引号锁定`);
+      assert.match(label, /\bContainer\s*:/i, `${filename} 的 Label 缺少 Container 绑定`);
+      assert.match(label, /\bIllustration\s*:/i, `${filename} 的 Label 缺少 Illustration 绑定`);
+    }
+  }
+
+  return {
+    promptFile: filename,
+    profile,
+    imageRole,
+    outputPng,
+    informationQuestion,
+    layoutFamily,
+    paletteBalance,
+    whitespaceStrategy,
+    depthTreatment,
+    readingFlow,
+    aspectLock,
+    canvas,
+    aspect,
+    labels,
+    complex,
+  };
+}
+
 export async function verifyVisualPrompts(articleDirectory) {
   const root = resolve(articleDirectory ?? process.cwd());
   const visualSystemPath = join(root, 'imgs', 'visual-system.md');
   const promptsDir = join(root, 'imgs', 'prompts');
   const visualSystem = await readFile(visualSystemPath, 'utf8');
+  const productionSpec = await readFile(join(root, 'spec.md'), 'utf8').catch(() => '');
+  const declaredBodyImageProfile = scalarValue(productionSpec, 'Body-Image-Profile').toLowerCase();
+  const bodyImageProfile = declaredBodyImageProfile || 'legacy';
+  assert.ok(
+    bodyImageProfile === 'legacy' || bodyImageProfile === BODY_IMAGE_PROFILE,
+    `spec.md 的 Body-Image-Profile 无效 ${bodyImageProfile}`,
+  );
 
   assert.match(visualSystem, /^# XPC_THEME_VISUAL_SYSTEM$/m, 'visual-system.md 缺少主题视觉系统标记');
 
@@ -148,6 +222,7 @@ export async function verifyVisualPrompts(articleDirectory) {
 
   const diagramSpecs = [];
   const overviewSpecs = [];
+  const bodyImageSpecs = [];
   for (const filename of promptFiles) {
     const prompt = await readFile(join(promptsDir, filename), 'utf8');
     assert.match(prompt, /^# XPC_THEME_VISUAL_SYSTEM$/m, `${filename} 缺少主题视觉系统标记`);
@@ -158,11 +233,21 @@ export async function verifyVisualPrompts(articleDirectory) {
     assert.match(prompt, /ASPECT|Aspect ratio/i, `${filename} 缺少画幅要求`);
     const diagramSpec = parseComplexFlowchartSpec(prompt, filename);
     const overviewSpec = parseOpeningOverviewSpec(prompt, filename);
+    const bodyImageSpec = parseBodyImageProfile(prompt, filename);
+    const isCover = /^00-cover(?:-|\.)/i.test(filename);
+    if (bodyImageProfile === BODY_IMAGE_PROFILE) {
+      if (isCover) assert.equal(bodyImageSpec, null, `${filename} 是封面，不得使用正文图片 profile`);
+      else assert.ok(bodyImageSpec, `${filename} 缺少 Body-Image-Profile: ${BODY_IMAGE_PROFILE}`);
+    }
     if (diagramSpec && overviewSpec) {
       assert.equal(diagramSpec.outputPng, overviewSpec.outputPng, `${filename} 的复杂图与总览图 Output-PNG 不一致`);
     }
+    if (diagramSpec && bodyImageSpec) {
+      assert.equal(diagramSpec.outputPng, bodyImageSpec.outputPng, `${filename} 的复杂图与正文 profile Output-PNG 不一致`);
+    }
     if (diagramSpec) diagramSpecs.push(diagramSpec);
     if (overviewSpec) overviewSpecs.push(overviewSpec);
+    if (bodyImageSpec) bodyImageSpecs.push(bodyImageSpec);
   }
 
   const sourcePaths = diagramSpecs.map((item) => item.sourceSvg);
@@ -170,6 +255,8 @@ export async function verifyVisualPrompts(articleDirectory) {
   assert.equal(new Set(sourcePaths).size, sourcePaths.length, 'complex-flowchart 的 Source-SVG 不得重复');
   assert.equal(new Set(outputPaths).size, outputPaths.length, 'complex-flowchart 的 Output-PNG 不得重复');
   assert.ok(overviewSpecs.length <= 1, '每篇文章最多只能有一个 opening-overview 规格');
+  const bodyOutputPaths = bodyImageSpecs.map((item) => item.outputPng);
+  assert.equal(new Set(bodyOutputPaths).size, bodyOutputPaths.length, '正文图片 profile 的 Output-PNG 不得重复');
 
   return {
     result: 'PASS',
@@ -179,6 +266,8 @@ export async function verifyVisualPrompts(articleDirectory) {
     promptFiles,
     complexFlowcharts: diagramSpecs.length,
     openingOverviews: overviewSpecs.length,
+    bodyImageProfile,
+    bodyImageSpecs,
     diagramSpecs,
     overviewSpecs,
   };
